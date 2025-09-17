@@ -15,7 +15,10 @@ Campus Market is a Facebook Marketplace-like web app for UNCC students to buy an
 #Clone the repository
 
 ```bash
-git clone <your-repo-url>
+First time only:
+git clone <git@github.com:EthanBeeson/CampusMarket.git>
+
+Every session:
 cd CampusMarket
 
 # Windows (Git Bash)
