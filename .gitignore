@@ -1,0 +1,13 @@
+# Python virtual environment
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# SQLite database (optional, if you don’t want to push it)
+campus_market.db
+
+# OS files
+.DS_Store
+Thumbs.db
