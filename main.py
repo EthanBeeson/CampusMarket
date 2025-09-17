@@ -1,3 +1,4 @@
+import streamlit as st
 from app.db import Base, engine, SessionLocal
 from app.models.listing import Listing
 from app.models.image import Image
@@ -6,46 +7,41 @@ from app.crud.listings import create_listing, get_listings, delete_listing
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
-#======== Example Usage ========#
-# Testing CRUD functions with local variables
-# ==============================#
+#=============== Streamlit Base Homepage ==================
+
+# Title
+st.title("🏫 Campus Market")
+st.write("Welcome to Campus Market! Buy and sell items with UNCC students.")
+
+# Sidebar for adding search/filter later
+st.sidebar.header("Filters (coming soon)")
+st.sidebar.text("Filter by keyword, price, category...")
 
 # Start session
 db = SessionLocal()
-
-# Create a listing with images
-listing = create_listing(
-    db,
-    title="Used Laptop",
-    description="Selling my old laptop, works perfectly.",
-    price=350.00,
-    image_urls=["laptop1.jpg", "laptop2.jpg"]
-)
-print(f"Created listing: {listing.title} with {len(listing.images)} images")
 
 # Query all listings
 all_listings = get_listings(db)
 for l in all_listings:
     print(f"ID: {l.id}, Listing: {l.title}, Price: ${l.price}, Images: {[img.url for img in l.images]}")
 
-'''
-# Update listing: change title, price, add and remove images
-updated_listing = update_listing(
-    db,
-    listing_id=listing.id,
-    title="CS Textbook - Updated",
-    price=25.0,
-    add_images=["textbook3.jpg"],
-    remove_image_ids=[listing.images[0].id]  # remove first image
-)
+# Streamlit Display Listings
+if all_listings:
+    for l in all_listings:
+        st.subheader(f"{l.title} - ${l.price:.2f}")
+        st.write(l.description)
 
-print(f"\nUpdated listing: {updated_listing.title}, Price: ${updated_listing.price}")
-print("Images after update:", [img.url for img in updated_listing.images])
-'''
-
-# Delete the listing
-deleted = delete_listing(db, listing.id)
-print(f"Deleted listing: {deleted}")
+        # Show images if any
+        if l.images:
+            cols = st.columns(len(l.images))
+            for col, img in zip(cols, l.images):
+                try:
+                    col.image(img.url, width=150)
+                except FileNotFoundError:
+                    col.text("[Image not found]")
+        st.markdown("---")
+else:
+    st.info("No listings available yet.")
 
 db.close()
 
