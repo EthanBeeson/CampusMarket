@@ -12,7 +12,7 @@ Campus Market is a Facebook Marketplace-like web app for UNCC students to buy an
 
 ## Project Setup
 
-### 1. Clone the repository
+#Clone the repository
 
 ```bash
 git clone <your-repo-url>
@@ -44,6 +44,7 @@ streamlit run app/main.py
 
 ## Team Workflow
 
+Start Session:
 1. git pull
 
 2. source venv/Scripts/activate
@@ -51,3 +52,10 @@ streamlit run app/main.py
 3. pip install -r requirements.txt
 
 4. streamlit run app/main.py
+
+Done with session:
+5. git add .
+
+6. git commit -m "Put here what you implemented"
+
+7. git push origin main
