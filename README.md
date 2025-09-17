@@ -12,18 +12,21 @@ Campus Market is a Facebook Marketplace-like web app for UNCC students to buy an
 
 ## Project Setup
 
-### 1. Clone the repository
+#Clone the repository
 
 ```bash
-git clone <your-repo-url>
+First time only:
+git clone <git@github.com:EthanBeeson/CampusMarket.git>
+
+Every session:
 cd CampusMarket
 
 # Windows (Git Bash)
-python3 -m venv venv
+ONLY DO THIS THE FIRST TIME: python3 -m venv venv
 source venv/Scripts/activate
 
 # macOS/Linux
-python3 -m venv venv
+ONLY DO THIS THE FIRST TIME: python3 -m venv venv
 source venv/bin/activate
 
 # Install Dependencies
@@ -32,8 +35,13 @@ pip install -r requirements.txt
 # Initialize the database by running main.py
 python main.py
 
+# First time only:
+# From the root of the project CampusMarket create a fake listing by running:
+python -m scripts.seed_db
+
 # For testing streamlit frontend
-streamlit run app/main.py
+streamlit run main.py
+# Navigate to local URL given after the above command ie. http://localhost:8501
 
 ## Notes
 
@@ -44,6 +52,7 @@ streamlit run app/main.py
 
 ## Team Workflow
 
+Start Session:
 1. git pull
 
 2. source venv/Scripts/activate
@@ -51,3 +60,10 @@ streamlit run app/main.py
 3. pip install -r requirements.txt
 
 4. streamlit run app/main.py
+
+Done with session:
+5. git add .
+
+6. git commit -m "Put here what you implemented"
+
+7. git push origin main
