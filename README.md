@@ -35,6 +35,10 @@ pip install -r requirements.txt
 # Initialize the database by running main.py
 python main.py
 
+# First time only:
+# From the root of the project CampusMarket create a fake listing by running:
+python -m scripts.seed_db
+
 # For testing streamlit frontend
 streamlit run main.py
 # Navigate to local URL given after the above command ie. http://localhost:8501
