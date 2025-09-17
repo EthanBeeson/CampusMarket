@@ -22,11 +22,11 @@ Every session:
 cd CampusMarket
 
 # Windows (Git Bash)
-python3 -m venv venv
+ONLY DO THIS THE FIRST TIME: python3 -m venv venv
 source venv/Scripts/activate
 
 # macOS/Linux
-python3 -m venv venv
+ONLY DO THIS THE FIRST TIME: python3 -m venv venv
 source venv/bin/activate
 
 # Install Dependencies
