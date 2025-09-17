@@ -36,7 +36,8 @@ pip install -r requirements.txt
 python main.py
 
 # For testing streamlit frontend
-streamlit run app/main.py
+streamlit run main.py
+# Navigate to local URL given after the above command ie. http://localhost:8501
 
 ## Notes
 
