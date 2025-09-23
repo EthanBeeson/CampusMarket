@@ -1,10 +1,18 @@
 # app/pages/1_Create_Listing.py
-#UI Framework 
+
+# UI Framework 
 import streamlit as st
-#SQlAlchemy DB Session 
+import os
+import uuid
+
+# SQLAlchemy DB Session 
 from app.db import SessionLocal
-#CRUD Function that writes a new listing to the database 
+# CRUD Function that writes a new listing to the database 
 from app.crud.listings import create_listing
+
+# Make sure we have a place to store uploads
+UPLOAD_DIR = "uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # Charlotte green background
 st.markdown(
@@ -27,45 +35,17 @@ st.markdown(
     .stTextArea>div>div>textarea,
     .stNumberInput>div>div>input {
         background-color: white;
-        color: black;               /* typed text color */
-        -webkit-text-fill-color: black; /* extra for some webkit cases */
+        color: black;               
+        -webkit-text-fill-color: black;
     }
 
-    /* CHANGED: Ensure NumberInput (Price box) matches styling */
+    /* Price box styling */
     .stNumberInput input {
         background-color: white !important;
         color: black !important;
     }
 
-    /* CHANGED: placeholder styling for many browsers and cases */
-    /* WebKit/Blink */
-    .stTextInput>div>div>input::-webkit-input-placeholder,
-    .stTextArea>div>div>textarea::-webkit-input-placeholder,
-    input::-webkit-input-placeholder,
-    textarea::-webkit-input-placeholder {
-        color: black !important;
-        opacity: 1 !important;
-    }
-
-    /* Firefox 19+ */
-    .stTextInput>div>div>input::-moz-placeholder,
-    .stTextArea>div>div>textarea::-moz-placeholder,
-    input::-moz-placeholder,
-    textarea::-moz-placeholder {
-        color: black !important;
-        opacity: 1 !important;
-    }
-
-    /* IE 10+ */
-    .stTextInput>div>div>input:-ms-input-placeholder,
-    .stTextArea>div>div>textarea:-ms-input-placeholder,
-    input:-ms-input-placeholder,
-    textarea:-ms-input-placeholder {
-        color: black !important;
-        opacity: 1 !important;
-    }
-
-    /* Standard */
+    /* Placeholder styling */
     .stTextInput>div>div>input::placeholder,
     .stTextArea>div>div>textarea::placeholder,
     input::placeholder,
@@ -81,7 +61,6 @@ st.markdown(
     }
     </style>
     """,
-
     unsafe_allow_html=True
 )
 
@@ -92,9 +71,14 @@ with st.form("create_listing_form", clear_on_submit=False):
     description = st.text_area("Description", placeholder="e.g. Works well; pickup only.")
     price = st.number_input("Price (USD)", min_value=0.0, step=1.0, format="%.2f")
     contact = st.text_input("Contact Information", placeholder="Email and/or Phone Number")
+    images = st.file_uploader(
+        "Upload Item Pictures",
+        type=["png", "jpg", "jpeg"],
+        accept_multiple_files=True
+    )
+
     submitted = st.form_submit_button("Publish")
 
-    #validation for title/description/price 
     if submitted:
         errors = []
         if not title.strip():
@@ -106,20 +90,33 @@ with st.form("create_listing_form", clear_on_submit=False):
         if not contact.strip():
             errors.append("Contact information is required.")
 
-    #displays visible error messages - this is where if valid opens a DB session and calls crud
         if errors:
             for e in errors:
                 st.error(e)
         else:
+            # Save uploaded files
+            saved_paths = []
+            for img in images:
+                ext = os.path.splitext(img.name)[1].lower()
+                filename = f"{uuid.uuid4().hex}{ext}"
+                file_path = os.path.join(UPLOAD_DIR, filename)
+
+                with open(file_path, "wb") as f:
+                    f.write(img.getbuffer())
+
+                saved_paths.append(file_path)
+
             db = SessionLocal()
             try:
                 item = create_listing(
                     db=db,
                     title=title.strip(),
                     description=description.strip(),
-                    price=price,         # your model uses Float now
-                    image_urls=[],       # hook up later when you add uploads
+                    price=price,
+                    image_urls=saved_paths,   # store local file paths in DB
                 )
                 st.success(f"Listing created: {item.title}")
+                if saved_paths:
+                    st.image(saved_paths, caption="Uploaded Images", use_column_width=True)
             finally:
                 db.close()
