@@ -9,6 +9,18 @@ Base.metadata.create_all(bind=engine)
 
 #=============== Streamlit Base Homepage ==================
 
+# Green backgorund for charlotte
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background-color: #005035; /* uncc green */
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # Title
 st.title("🏫 Campus Market")
 st.write("Welcome to Campus Market! Buy and sell items with UNCC students.")
