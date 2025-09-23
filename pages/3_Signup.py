@@ -46,6 +46,40 @@ def create_user(db, email: str, password: str):
 
 # ---------------- Streamlit UI ----------------
 st.set_page_config(page_title="Signup - Campus Market", layout="centered")
+
+# Charlotte colors
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background-color: #005035;  /* dark green */
+    }
+    div[data-testid="stForm"] {
+        background-color: #87B481;  /* light green */
+        padding: 20px;
+        border-radius: 10px;
+    }
+    .stTextInput>div>div>input,
+    .stTextArea>div>div>textarea,
+    .stNumberInput>div>div>input {
+        background-color: white;
+        color: black;
+    }
+    /* Placeholder text fix */
+    .stTextInput>div>div>input::placeholder,
+    .stTextArea>div>div>textarea::placeholder {
+        color: black !important;
+        opacity: 1 !important;
+    }
+    div.stButton > button {
+        background-color: #4CAF50;
+        color: white;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 st.title("📝 Signup")
 
 st.write("Create a new account with your student email and password.")
