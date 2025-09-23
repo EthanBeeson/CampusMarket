@@ -29,7 +29,7 @@ source venv/Scripts/activate
 ONLY DO THIS THE FIRST TIME: python3 -m venv venv
 source venv/bin/activate
 
-# Install Dependencies
+# Install Dependencies - once 
 pip install -r requirements.txt
 
 # Initialize the database by running main.py
