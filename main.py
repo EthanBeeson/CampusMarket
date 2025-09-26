@@ -37,23 +37,29 @@ all_listings = get_listings(db)
 for l in all_listings:
     print(f"ID: {l.id}, Listing: {l.title}, Price: ${l.price}, Images: {[img.url for img in l.images]}")
 
-# Streamlit Display Listings
-if all_listings:
-    for l in all_listings:
-        st.subheader(f"{l.title} - ${l.price:.2f}")
-        st.write(l.description)
 
-        # Show images if any
-        if l.images:
-            cols = st.columns(len(l.images))
-            for col, img in zip(cols, l.images):
-                try:
-                    col.image(img.url, width=150)
-                except FileNotFoundError:
-                    col.text("[Image not found]")
-        st.markdown("---")
-else:
-    st.info("No listings available yet.")
+for l in all_listings:
+    st.subheader(f"{l.title} - ${l.price:.2f}")
+    st.write(l.description)
+
+    # Delete button
+    if st.button(f"Delete Listing {l.id}", key=f"delete-{l.id}"):
+        deleted = delete_listing(db, listing_id=l.id)
+        if deleted:
+            st.success(f"Deleted listing {l.id}")
+        else:
+            st.error(f"Listing {l.id} not found")
+        st.rerun()
+
+    # Show images if any
+    if l.images:
+        cols = st.columns(len(l.images))
+        for col, img in zip(cols, l.images):
+            try:
+                col.image(img.url, width=150)
+            except FileNotFoundError:
+                col.text("[Image not found]")
+    st.markdown("---")
 
 db.close()
 
