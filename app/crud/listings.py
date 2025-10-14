@@ -1,6 +1,9 @@
 from sqlalchemy.orm import Session
 from app.models.listing import Listing
 from app.models.image import Image
+from sqlalchemy import or_
+from rapidfuzz import fuzz
+
 
 #====== CRUD Operations for Listings ======#
 # These CRUD functions are to be use in main.py and future API endpoints
@@ -71,4 +74,39 @@ def update_listing(db: Session, listing_id: int, title: str = None, description:
     db.commit()
     db.refresh(listing)
     return listing
-#=========================================#
+
+
+# ====== Search Listings Functionality ======#
+# This function allows searching listings by keywords in title or description,
+# as well as filtering by price range. It supports both exact and fuzzy matches.
+#============================================#
+
+def search_listings(db, keyword: str, threshold: int = 60, min_price: float = None, max_price: float = None):
+    q = db.query(Listing)
+    listings = q.all()
+
+    # --- Keyword search with fuzzy matching ---
+    if keyword:
+        keyword = keyword.lower()
+    results = []
+    if keyword:
+        keyword_norm = keyword.lower().strip()
+        for listing in listings:
+            title_norm = listing.title.lower().strip()
+            desc_norm = listing.description.lower().strip()
+            title_score = fuzz.token_sort_ratio(keyword_norm, title_norm)
+            desc_score = fuzz.token_sort_ratio(keyword_norm, desc_norm)
+            if max(title_score, desc_score) >= threshold:
+                results.append(listing)
+    else:
+        results = listings
+
+    # --- Price filters ---
+    if min_price is not None:
+        results = [l for l in results if l.price >= min_price]
+    if max_price is not None:
+        results = [l for l in results if l.price <= max_price]
+
+    return results 
+
+

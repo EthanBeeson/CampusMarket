@@ -2,7 +2,7 @@ import streamlit as st
 from app.db import Base, engine, SessionLocal
 from app.models.listing import Listing
 from app.models.image import Image
-from app.crud.listings import create_listing, get_listings, delete_listing
+from app.crud.listings import create_listing, get_listings, delete_listing, search_listings
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -25,20 +25,32 @@ st.markdown(
 st.title("🏫 Campus Market")
 st.write("Welcome to Campus Market! Buy and sell items with UNCC students.")
 
-# Sidebar for adding search/filter later
-st.sidebar.header("Filters (coming soon)")
-st.sidebar.text("Filter by keyword, price, category...")
-
 # Start session
 db = SessionLocal()
 
-# Query all listings
-all_listings = get_listings(db)
-for l in all_listings:
+# --- Sidebar search controls ---
+st.sidebar.header("Search & Filters")
+search_query = st.sidebar.text_input("Search by keyword")
+min_price = st.sidebar.number_input("Min Price", min_value=0.0, step=10.0)
+max_price = st.sidebar.number_input("Max Price", min_value=0.0, step=10.0)
+
+# --- Fetch filtered listings or all listings ---
+if search_query or min_price or max_price:
+    listings = listings = search_listings(
+        db,
+        keyword=search_query if search_query else None,
+        min_price=min_price if min_price > 0 else None,
+        max_price=max_price if max_price > 0 else None
+    )
+else:
+    listings = get_listings(db)
+
+# --- Display listings returned in terminal ---
+for l in listings:
     print(f"ID: {l.id}, Listing: {l.title}, Price: ${l.price}, Images: {[img.url for img in l.images]}")
 
-
-for l in all_listings:
+# --- Display listings on homepage ---
+for l in listings:
     st.subheader(f"{l.title} - ${l.price:.2f}")
     st.write(l.description)
 
