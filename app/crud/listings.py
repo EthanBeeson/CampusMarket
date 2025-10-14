@@ -15,6 +15,9 @@ def create_listing(db: Session, title: str, description: str, price: float, imag
     images = [Image(url=url) for url in image_urls]
     # Connects all images to the listing by the SQLAlchemy listing.images list
     listing.images.extend(images)
+
+    if price < 0:
+        raise ValueError("Price cannot be negative")
     
     db.add(listing)
     db.commit()
@@ -50,7 +53,7 @@ def update_listing(db: Session, listing_id: int, title: str = None, description:
         listing.title = title
     if description is not None:
         listing.description = description
-    if price is not None:
+    if price is not None and price < 0:
         listing.price = price
 
     # Add new images
