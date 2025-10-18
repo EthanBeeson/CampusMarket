@@ -81,16 +81,23 @@ def update_listing(db: Session, listing_id: int, title: str = None, description:
 # as well as filtering by price range. It supports both exact and fuzzy matches.
 #============================================#
 
-def search_listings(db, keyword: str, threshold: int = 60, min_price: float = None, max_price: float = None):
+def search_listings(db, keyword: str = None, threshold: int = 60,
+                    min_price: float = None, max_price: float = None):
+    # --- Start with all listings ---
     q = db.query(Listing)
+
+    # --- Apply price filters early ---
+    if min_price is not None:
+        q = q.filter(Listing.price >= min_price)
+    if max_price is not None:
+        q = q.filter(Listing.price <= max_price)
+
     listings = q.all()
 
-    # --- Keyword search with fuzzy matching ---
-    if keyword:
-        keyword = keyword.lower()
-    results = []
-    if keyword:
+    # --- Apply fuzzy keyword search if keyword is provided ---
+    if keyword and keyword.strip():
         keyword_norm = keyword.lower().strip()
+        results = []
         for listing in listings:
             title_norm = listing.title.lower().strip()
             desc_norm = listing.description.lower().strip()
@@ -98,15 +105,7 @@ def search_listings(db, keyword: str, threshold: int = 60, min_price: float = No
             desc_score = fuzz.token_sort_ratio(keyword_norm, desc_norm)
             if max(title_score, desc_score) >= threshold:
                 results.append(listing)
-    else:
-        results = listings
+        return results
 
-    # --- Price filters ---
-    if min_price is not None:
-        results = [l for l in results if l.price >= min_price]
-    if max_price is not None:
-        results = [l for l in results if l.price <= max_price]
-
-    return results 
-
-
+    # --- If no keyword provided, just return filtered results ---
+    return listings
