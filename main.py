@@ -4,6 +4,7 @@ from app.models.listing import Listing
 from app.models.image import Image
 from app.crud.listings import create_listing, get_listings, delete_listing, search_listings
 
+
 # Create database tables
 Base.metadata.create_all(bind=engine)
 

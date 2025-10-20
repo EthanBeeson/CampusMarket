@@ -1,16 +1,26 @@
 from app.db import SessionLocal, Base, engine
 from app.crud.listings import create_listing
+from app.models.listing import Listing  # Needed for duplicate check
 
-Base.metadata.create_all(bind=engine)
-db = SessionLocal()
+def seed_database():
+    """Populate the database with initial demo data if empty."""
+    Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
 
-# This script is used to add mock data to the database for testing purposes
-create_listing(
-    db,
-    title="Bike",
-    description="This bike is in great condition, barely used.",
-    price=700.00,
-    image_urls=["app/images/laptop1.jpg"]
-)
+    try:
+        # Only seed if no listings exist
+        if db.query(Listing).count() == 0:
+            create_listing(
+                db,
+                title="Laptop",
+                description="Laptop is in great condition, barely used.",
+                price=700.00,
+                image_urls=["app/images/laptop1.jpg"]
+            )
+        else:
+            print("Database already contains listings, skipping seeding.")
+    finally:
+        db.close()
 
-db.close()
+if __name__ == "__main__":
+    seed_database()

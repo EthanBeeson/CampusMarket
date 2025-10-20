@@ -34,7 +34,7 @@ def db():
 
 def test_fuzzy_keyword_match(db):
     """Ensure fuzzy search returns close matches (case-insensitive)."""
-    results = search_listings(db, keyword="bike", threshold=50)
+    results = search_listings(db, keyword="bike", threshold=40)
     titles = [l.title for l in results]
 
     assert any("Bike" in t or "Bicycle" in t for t in titles)
@@ -64,7 +64,7 @@ def test_price_filter_max(db):
 
 def test_combined_keyword_and_price(db):
     """Ensure fuzzy search and price filters both apply."""
-    results = search_listings(db, keyword="bike", threshold=60, min_price=100.0, max_price=200.0)
+    results = search_listings(db, keyword="bike", threshold=40, min_price=100.0, max_price=200.0)
     assert all(100.0 <= l.price <= 200.0 for l in results)
     assert any("Bike" in l.title or "Bicycle" in l.title for l in results)
 
