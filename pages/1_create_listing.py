@@ -69,6 +69,12 @@ st.title("Create Listing")
 with st.form("create_listing_form", clear_on_submit=False):
     title = st.text_input("Title", max_chars=100, placeholder="e.g. Mini Fridge")
     description = st.text_area("Description", placeholder="e.g. Works well; pickup only.")
+    # Condition selector added here (New, Like New, Good, Fair, For Parts)
+    condition = st.selectbox(
+        "Condition",
+        ["New", "Like New", "Good", "Fair", "For Parts"],
+        index=2,
+    )
     price = st.number_input("Price (USD)", min_value=0.0, step=1.0, format="%.2f")
     contact = st.text_input("Contact Information", placeholder="Email and/or Phone Number")
     images = st.file_uploader(
@@ -113,6 +119,7 @@ with st.form("create_listing_form", clear_on_submit=False):
                     title=title.strip(),
                     description=description.strip(),
                     price=price,
+                    condition=condition,
                     image_urls=saved_paths,   # store local file paths in DB
                 )
                 st.success(f"Listing created: {item.title}")

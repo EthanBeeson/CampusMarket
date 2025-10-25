@@ -11,8 +11,9 @@ from rapidfuzz import fuzz
 #=========================================#
 
 # Create a listing
-def create_listing(db: Session, title: str, description: str, price: float, image_urls: list):
-    listing = Listing(title=title, description=description, price=price)
+def create_listing(db: Session, title: str, description: str, price: float, image_urls: list, condition: str = "Good"):
+    """Create and persist a Listing. `condition` defaults to 'Good'."""
+    listing = Listing(title=title, description=description, price=price, condition=condition)
     
     # Attach images
     images = [Image(url=url) for url in image_urls]
@@ -46,7 +47,7 @@ def delete_listing(db: Session, listing_id: int):
 
 # Update a listing
 def update_listing(db: Session, listing_id: int, title: str = None, description: str = None,
-                   price: float = None, add_images: list = None, remove_image_ids: list = None):
+                   price: float = None, condition: str = None, add_images: list = None, remove_image_ids: list = None):
     listing = db.query(Listing).filter(Listing.id == listing_id).first()
     if not listing:
         return None
@@ -58,6 +59,10 @@ def update_listing(db: Session, listing_id: int, title: str = None, description:
         listing.description = description
     if price is not None and price < 0:
         listing.price = price
+
+    # Update condition if provided
+    if condition is not None:
+        listing.condition = condition
 
     # Add new images
     if add_images:

@@ -68,6 +68,9 @@ else:
     # --- Display listings ---
     for l in listings:
         st.subheader(f"{l.title} - ${l.price:.2f}")
+        # Show condition if available (fallback to 'Unknown' for older rows)
+        condition = getattr(l, "condition", "Unknown")
+        st.markdown(f"**Condition:** {condition}")
         st.write(l.description)
 
         # Delete button
