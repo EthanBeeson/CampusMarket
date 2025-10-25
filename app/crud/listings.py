@@ -11,9 +11,8 @@ from rapidfuzz import fuzz
 #=========================================#
 
 # Create a listing
-def create_listing(db: Session, title: str, description: str, price: float, image_urls: list, condition: str = "Good"):
-    """Create and persist a Listing. `condition` defaults to 'Good'."""
-    listing = Listing(title=title, description=description, price=price, condition=condition)
+def create_listing(db: Session, title: str, description: str, price: float, image_urls: list, user_id:int):
+    listing = Listing(title=title, description=description, price=price, user_id =user_id)
     
     # Attach images
     images = [Image(url=url) for url in image_urls]

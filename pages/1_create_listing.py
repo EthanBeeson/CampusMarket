@@ -121,6 +121,7 @@ with st.form("create_listing_form", clear_on_submit=False):
                     price=price,
                     condition=condition,
                     image_urls=saved_paths,   # store local file paths in DB
+                    user_id=st.session_state["user_id"]
                 )
                 st.success(f"Listing created: {item.title}")
                 if saved_paths:
