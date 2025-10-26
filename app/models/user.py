@@ -13,6 +13,12 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     email = Column(String, unique=True, nullable=False)
     hashed_password = Column(String, nullable=False)
+    # Optional profile fields
+    full_name = Column(String(100), nullable=True)
+    display_name = Column(String(50), nullable=True)
+    phone = Column(String(20), nullable=True)
+    bio = Column(String(500), nullable=True)
+    profile_picture = Column(String(255), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 

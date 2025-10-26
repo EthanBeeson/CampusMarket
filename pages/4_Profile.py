@@ -12,6 +12,7 @@ from sqlalchemy import select
 from app.models.listing import Listing
 from app.models.image import Image
 from app.models.user import User
+from app.crud.users import update_user_profile, delete_user_profile_picture
 
 # Charlotte colors styling
 st.markdown(
@@ -233,6 +234,60 @@ st.header("Profile Information")
 st.write(f"**Email:** {user_email}")
 st.write(f"**User ID:** {user_id}")
 
+# Load user record for profile fields
+db_user = None
+db = SessionLocal()
+try:
+    db_user = db.query(User).filter(User.id == user_id).first()
+finally:
+    db.close()
+
+# Profile info form
+st.subheader("Profile Details")
+with st.form(key="profile_form", clear_on_submit=False):
+    full_name_val = st.text_input("Full Name", value=getattr(db_user, "full_name", "") if db_user else "")
+    display_name_val = st.text_input("Display Name", value=getattr(db_user, "display_name", "") if db_user else "")
+    phone_val = st.text_input("Phone", value=getattr(db_user, "phone", "") if db_user else "")
+    bio_val = st.text_area("Bio", value=getattr(db_user, "bio", "") if db_user else "", height=120)
+    save_profile = st.form_submit_button("Save Profile")
+
+    if save_profile:
+        # Client-side validation before calling server
+        errors = []
+        if full_name_val and len(full_name_val.strip()) > 100:
+            errors.append("Full name must be 100 characters or fewer.")
+        if display_name_val and len(display_name_val.strip()) > 50:
+            errors.append("Display name must be 50 characters or fewer.")
+        if bio_val and len(bio_val.strip()) > 500:
+            errors.append("Bio must be 500 characters or fewer.")
+        # basic phone validation
+        phone_pattern = r'^\+?[0-9\-\s\(\)]{7,20}$'
+        if phone_val and not re.match(phone_pattern, phone_val.strip()):
+            errors.append("Phone number appears invalid.")
+
+        if errors:
+            for e in errors:
+                st.error(e)
+        else:
+            db = SessionLocal()
+            try:
+                try:
+                    success = update_user_profile(db, user_id=user_id, full_name=full_name_val,
+                                                  display_name=display_name_val, phone=phone_val, bio=bio_val)
+                except ValueError as ve:
+                    st.error(str(ve))
+                    success = False
+
+                if success:
+                    st.success("Profile updated successfully.")
+                    st.rerun()
+                else:
+                    st.error("Failed to update profile.")
+            except Exception as e:
+                st.error(f"Error updating profile: {e}")
+            finally:
+                db.close()
+
 # Profile Picture Section
 st.subheader("Profile Picture")
 
@@ -244,6 +299,32 @@ col1, col2 = st.columns([1, 2])
 with col1:
     if profile_pic_path:
         st.image(profile_pic_path, width=150, caption="Current Profile Picture")
+        # remove picture flow
+        if st.button("Remove picture", key=f"remove_pic_{user_id}"):
+            st.session_state[f"confirm_remove_pic_{user_id}"] = True
+
+        if st.session_state.get(f"confirm_remove_pic_{user_id}", False):
+            st.warning("Are you sure you want to remove your profile picture?")
+            c_yes, c_no = st.columns([1, 1])
+            if c_yes.button("Yes, remove", key=f"yes_remove_{user_id}"):
+                db = SessionLocal()
+                try:
+                    try:
+                        success = delete_user_profile_picture(db, user_id)
+                    except Exception as de:
+                        st.error(f"Error removing profile picture: {de}")
+                        success = False
+                    if success:
+                        st.success("Profile picture removed.")
+                        st.session_state.pop(f"confirm_remove_pic_{user_id}", None)
+                        st.rerun()
+                    else:
+                        st.error("Could not remove profile picture.")
+                finally:
+                    db.close()
+            if c_no.button("Cancel", key=f"no_remove_{user_id}"):
+                st.session_state.pop(f"confirm_remove_pic_{user_id}", None)
+                st.info("Removal cancelled.")
     else:
         st.info("No profile picture uploaded yet.")
 
@@ -260,20 +341,32 @@ with col2:
         if uploaded_file.size > 5 * 1024 * 1024:
             st.error("File size too large. Please upload an image smaller than 5MB.")
         else:
-            try:
-                # Save the new profile picture
-                new_profile_path = save_profile_picture(uploaded_file, user_id)
-                
-                # Remove old profile pictures
-                upload_dir = "uploads/profile_pictures"
-                for file in os.listdir(upload_dir):
-                    if file.startswith(f"profile_{user_id}") and file != os.path.basename(new_profile_path):
-                        os.remove(os.path.join(upload_dir, file))
-                
-                st.success("Profile picture updated successfully!")
-                st.rerun()
-            except Exception as e:
-                st.error(f"Error uploading profile picture: {e}")
+            # Preview before saving
+            st.image(uploaded_file, width=200, caption="Preview")
+            if st.button("Save Profile Picture"):
+                try:
+                    # Save the new profile picture
+                    new_profile_path = save_profile_picture(uploaded_file, user_id)
+                    # Persist profile picture path to user record
+                    db = SessionLocal()
+                    try:
+                        update_user_profile(db, user_id=user_id, profile_picture=new_profile_path)
+                    finally:
+                        db.close()
+
+                    # Remove old profile pictures
+                    upload_dir = "uploads/profile_pictures"
+                    for file in os.listdir(upload_dir):
+                        if file.startswith(f"profile_{user_id}") and file != os.path.basename(new_profile_path):
+                            try:
+                                os.remove(os.path.join(upload_dir, file))
+                            except OSError:
+                                pass
+
+                    st.success("Profile picture updated successfully!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Error saving profile picture: {e}")
 
 st.markdown('</div>', unsafe_allow_html=True)
 

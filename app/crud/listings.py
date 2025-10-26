@@ -4,6 +4,9 @@ from app.models.image import Image
 from sqlalchemy import or_
 from rapidfuzz import fuzz
 
+# Allowed values for the listing condition. Keep in sync with UI options.
+ALLOWED_CONDITIONS = ["New", "Like New", "Good", "Fair", "For Parts"]
+
 
 #====== CRUD Operations for Listings ======#
 # These CRUD functions are to be use in main.py and future API endpoints
@@ -11,8 +14,18 @@ from rapidfuzz import fuzz
 #=========================================#
 
 # Create a listing
-def create_listing(db: Session, title: str, description: str, price: float, image_urls: list, user_id:int):
-    listing = Listing(title=title, description=description, price=price, user_id =user_id)
+def create_listing(db: Session, title: str, description: str, price: float, image_urls: list, user_id: int, condition: str = "Good"):
+    """Create a listing and persist images, user and condition."""
+    # Validate condition
+    if condition is None:
+        condition = "Good"
+    if not isinstance(condition, str):
+        raise ValueError("Condition must be a string")
+    condition_clean = condition.strip()
+    if condition_clean not in ALLOWED_CONDITIONS:
+        raise ValueError(f"Invalid condition '{condition}'. Allowed: {ALLOWED_CONDITIONS}")
+
+    listing = Listing(title=title, description=description, price=price, user_id=user_id, condition=condition_clean)
     
     # Attach images
     images = [Image(url=url) for url in image_urls]
@@ -64,12 +77,16 @@ def update_listing(db: Session, listing_id: int, title: str = None, description:
         if price_val < 0:
             raise ValueError("Price must be non-negative")
         listing.price = price_val
-        
+    
 
     # Update condition if provided
     if condition is not None:
-        listing.condition = condition
-
+        if not isinstance(condition, str):
+            raise ValueError("Condition must be a string")
+        condition_clean = condition.strip()
+        if condition_clean not in ALLOWED_CONDITIONS:
+            raise ValueError(f"Invalid condition '{condition}'. Allowed: {ALLOWED_CONDITIONS}")
+        listing.condition = condition_clean
     # Add new images
     if add_images:
         new_images = [Image(url=url) for url in add_images]
@@ -93,7 +110,8 @@ def update_listing(db: Session, listing_id: int, title: str = None, description:
 #============================================#
 
 def search_listings(db, keyword: str = None, threshold: int = 60,
-                    min_price: float = None, max_price: float = None):
+                    min_price: float = None, max_price: float = None,
+                    conditions: list = None):
     # --- Start with all listings ---
     q = db.query(Listing)
 
@@ -102,7 +120,11 @@ def search_listings(db, keyword: str = None, threshold: int = 60,
         q = q.filter(Listing.price >= min_price)
     if max_price is not None:
         q = q.filter(Listing.price <= max_price)
-
+    # --- Apply condition filters if provided ---
+    if conditions:
+        # ensure we have a list of values
+        if isinstance(conditions, (list, tuple, set)) and len(conditions) > 0:
+            q = q.filter(Listing.condition.in_(list(conditions)))
     listings = q.all()
 
     # --- Apply fuzzy keyword search if keyword is provided ---

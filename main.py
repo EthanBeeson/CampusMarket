@@ -3,7 +3,7 @@ from app.db import Base, engine, SessionLocal
 from app.models.listing import Listing
 from app.models.image import Image
 from app.crud.listings import create_listing, get_listings, delete_listing, search_listings
-from app.crud.listings import mark_listing_sold, ForbiddenAction, update_listing
+from app.crud.listings import mark_listing_sold, ForbiddenAction, update_listing, ALLOWED_CONDITIONS
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -34,14 +34,20 @@ st.sidebar.header("Search & Filters")
 search_query = st.sidebar.text_input("Search by keyword")
 min_price = st.sidebar.number_input("Min Price", min_value=0.0, step=10.0)
 max_price = st.sidebar.number_input("Max Price", min_value=0.0, step=10.0)
+# Condition filter in sidebar
+conditions = st.sidebar.multiselect(
+    "Condition",
+    ALLOWED_CONDITIONS,
+)
 
 # --- Fetch filtered listings or all listings ---
-if search_query or min_price or max_price:
+if search_query or min_price or max_price or conditions:
     listings = search_listings(
         db,
         keyword=search_query if search_query else None,
         min_price=min_price if min_price > 0 else None,
-        max_price=max_price if max_price > 0 else None
+        max_price=max_price if max_price > 0 else None,
+        conditions=conditions if conditions else None,
     )
 else:
     listings = get_listings(db)
@@ -112,12 +118,12 @@ else:
                 new_title = st.text_input("Title", value=l.title)
                 new_desc = st.text_area("Description", value=l.description or "", height=120)
                 new_price = st.number_input("Price", min_value=0.0, value=float(l.price), step=1.0)
-                cond_opts = ["New", "Good", "Fair", "Poor"]
+                cond_opts = ALLOWED_CONDITIONS
                 current_cond = getattr(l, "condition", None) or "Good"
                 new_cond = st.selectbox(
                     "Condition",
                     options=cond_opts,
-                    index=cond_opts.index(current_cond) if current_cond in cond_opts else 1,
+                    index=cond_opts.index(current_cond) if current_cond in cond_opts else 0,
                 )
 
                 c_save, c_cancel = st.columns(2)
@@ -169,6 +175,7 @@ else:
                 st.info("Deletion cancelled.")
                 st.rerun()
 
+        # (condition filter moved to the sidebar)
 
         # Show images if any
         if l.images:
