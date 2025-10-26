@@ -56,8 +56,15 @@ def update_listing(db: Session, listing_id: int, title: str = None, description:
         listing.title = title
     if description is not None:
         listing.description = description
-    if price is not None and price < 0:
-        listing.price = price
+    if price is not None:
+        try:
+            price_val = float(price)
+        except (TypeError, ValueError):
+            raise ValueError("Price must be a number")
+        if price_val < 0:
+            raise ValueError("Price must be non-negative")
+        listing.price = price_val
+        
 
     # Update condition if provided
     if condition is not None:
@@ -113,3 +120,32 @@ def search_listings(db, keyword: str = None, threshold: int = 60,
 
     # --- If no keyword provided, just return filtered results ---
     return listings
+
+
+# ====== Mark Item As Sold Functionality ======#
+# This function allows users to mark their items
+#as sold
+#============================================#
+class ForbiddenAction(Exception):
+    pass
+
+def get_listing_by_id(db: Session, listing_id: int):
+    return db.get(Listing, listing_id)
+
+
+def ensure_owner(listing: Listing | None, user_id: int):
+    if listing is None:
+        raise ValueError("Listing not found")
+    if listing.user_id != user_id:
+        raise ForbiddenAction("You do not own this listing")
+    
+
+def mark_listing_sold(db: Session, listing_id: int, user_id: int) -> Listing:
+    listing = db.query(Listing).filter_by(id=listing_id).first()
+    if not listing:
+        return False
+    if listing.user_id != user_id:
+        raise ForbiddenAction("You do not own this listing")
+    listing.is_sold = True
+    db.commit()
+    return True

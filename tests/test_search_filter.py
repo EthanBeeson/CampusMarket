@@ -1,6 +1,7 @@
 import pytest
 from app.db import Base, engine, SessionLocal
 from app.models.listing import Listing
+from app.models.user import User  # <-- added
 from app.crud.listings import search_listings
 
 # ----------- TEST SETUP ------------ #
@@ -13,12 +14,18 @@ def db():
 
     # Clean and seed test data
     db.query(Listing).delete()
+    db.query(User).delete()  # <-- added
+    db.commit()
+
+    # Create an owner to satisfy NOT NULL listings.user_id  <-- added
+    owner = User(email="search_owner@charlotte.edu", hashed_password="x")
+    db.add(owner); db.commit(); db.refresh(owner)
 
     listings = [
-        Listing(title="Mountain Bike", description="Used bicycle, good condition", price=150.0),
-        Listing(title="Road Bicycle", description="Lightweight frame", price=300.0),
-        Listing(title="Gaming Laptop", description="RTX 4060, 16GB RAM", price=1200.0),
-        Listing(title="Desk Chair", description="Ergonomic and comfortable", price=100.0),
+        Listing(title="Mountain Bike", description="Used bicycle, good condition", price=150.0, user_id=owner.id),  # <-- added user_id
+        Listing(title="Road Bicycle", description="Lightweight frame", price=300.0, user_id=owner.id),
+        Listing(title="Gaming Laptop", description="RTX 4060, 16GB RAM", price=1200.0, user_id=owner.id),
+        Listing(title="Desk Chair", description="Ergonomic and comfortable", price=100.0, user_id=owner.id),
     ]
     db.add_all(listings)
     db.commit()
@@ -26,6 +33,7 @@ def db():
 
     # Teardown
     db.query(Listing).delete()
+    db.query(User).delete()  # <-- added
     db.commit()
     db.close()
 

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Text, DateTime,ForeignKey, func
+from sqlalchemy import Column, Integer, String, Float, Text, DateTime,ForeignKey, func, Boolean
 from sqlalchemy.orm import relationship
 from app.db import Base
 
@@ -15,6 +15,9 @@ class Listing(Base):
     condition = Column(String(20), nullable=False, default="Good", server_default="Good")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    #is_sold (story 15)
+    is_sold = Column(Boolean, nullable=False, default=False, server_default="0")
 
       # Foreign key to User
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)

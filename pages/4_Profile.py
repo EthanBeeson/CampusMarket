@@ -288,7 +288,7 @@ try:
     if not user_listings:
         st.markdown('<div class="no-listings">', unsafe_allow_html=True)
         st.write("You haven't created any listings yet.")
-        st.page_link("pages/1_Create_Listing.py", label="Create Your First Listing", icon="📝")
+        st.page_link("pages/1_create_listing.py", label="Create Your First Listing", icon="📝")
         st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.write(f"**Total Listings:** {len(user_listings)}")
@@ -311,11 +311,11 @@ col1, col2, col3 = st.columns(3)
 
 with col1:
     if st.button("📝 Create New Listing", use_container_width=True):
-        st.switch_page("pages/1_Create_Listing.py")
+        st.switch_page("pages/1_create_listing.py")
 
 with col2:
     if st.button("🔍 Browse Listings", use_container_width=True):
-        st.switch_page("app.py")
+        st.switch_page("main.py")
 
 with col3:
     # Enhanced Logout button with confirmation

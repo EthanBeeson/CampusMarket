@@ -64,6 +64,19 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# Require login
+user_id = st.session_state.get("user_id")
+if not user_id:
+    st.info("Please log in to create a listing.")
+    st.stop()
+
+st.markdown("""<style> .stApp { background-color: #005035; } 
+div[data-testid="stForm"] { background-color:#87B481; padding:20px; border-radius:10px; }
+.stTextInput>div>div>input,.stTextArea>div>div>textarea,.stNumberInput>div>div>input{background:white;color:black;-webkit-text-fill-color:black;}
+.stTextInput>div>div>input::placeholder,.stTextArea>div>div>textarea::placeholder,input::placeholder,textarea::placeholder{color:black!important;opacity:1!important;}
+div.stButton > button { background-color:#4CAF50; color:white; }
+</style>""", unsafe_allow_html=True)
+
 st.title("Create Listing")
 
 with st.form("create_listing_form", clear_on_submit=False):
@@ -119,9 +132,9 @@ with st.form("create_listing_form", clear_on_submit=False):
                     title=title.strip(),
                     description=description.strip(),
                     price=price,
-                    condition=condition,
+                    #condition=condition,
                     image_urls=saved_paths,   # store local file paths in DB
-                    user_id=st.session_state["user_id"]
+                    user_id=user_id
                 )
                 st.success(f"Listing created: {item.title}")
                 if saved_paths:

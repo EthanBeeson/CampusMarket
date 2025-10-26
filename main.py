@@ -3,6 +3,7 @@ from app.db import Base, engine, SessionLocal
 from app.models.listing import Listing
 from app.models.image import Image
 from app.crud.listings import create_listing, get_listings, delete_listing, search_listings
+from app.crud.listings import mark_listing_sold, ForbiddenAction, update_listing
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -67,20 +68,107 @@ if not listings:
 else:
     # --- Display listings ---
     for l in listings:
-        st.subheader(f"{l.title} - ${l.price:.2f}")
+        # --- Mark as Sold (Story #7) ---
+        # Move this block *inside* the loop and combine the title logic
+        is_sold = getattr(l, "is_sold", False)
+        label = " 🟡 SOLD" if is_sold else ""
+        title_text = f"~~{l.title}~~" if is_sold else l.title
+
+        # Update the header with sold status  (only printed ONCE now)
+        st.subheader(f"{title_text} - ${l.price:.2f}{label}")
+
         # Show condition if available (fallback to 'Unknown' for older rows)
         condition = getattr(l, "condition", "Unknown")
         st.markdown(f"**Condition:** {condition}")
         st.write(l.description)
 
-        # Delete button
-        if st.button(f"Delete Listing {l.id}", key=f"delete-{l.id}"):
-            deleted = delete_listing(db, listing_id=l.id)
-            if deleted:
-                st.success(f"Deleted listing {l.id}")
-            else:
-                st.error(f"Listing {l.id} not found")
-            st.rerun()
+        # Only show the button to the listing owner
+        user_id = st.session_state.get("user_id")
+        is_owner = bool(user_id) and (user_id == getattr(l, "user_id", None))
+
+        if is_owner and not is_sold:
+            if st.button("Mark as Sold", key=f"sold-{l.id}"):
+                try:
+                    mark_listing_sold(db, l.id, user_id)
+                    st.success("Marked as sold.")
+                    st.rerun()
+                except ForbiddenAction as e:
+                    st.error(str(e))
+                except Exception:
+                    st.error("Something went wrong marking as sold.")
+
+        
+        # --- Edit button + prefilled edit form (Story #75) ---
+        if is_owner:
+            if st.button("Edit", key=f"edit-{l.id}"):
+                st.session_state[f"editing_{l.id}"] = True
+                st.rerun()
+
+        # Show edit form if toggled for this listing
+        if is_owner and st.session_state.get(f"editing_{l.id}", False):
+            st.info("Editing this listing. Update fields and click Save.")
+            with st.form(key=f"edit-form-{l.id}", clear_on_submit=False):
+                # Prefill with current values
+                new_title = st.text_input("Title", value=l.title)
+                new_desc = st.text_area("Description", value=l.description or "", height=120)
+                new_price = st.number_input("Price", min_value=0.0, value=float(l.price), step=1.0)
+                cond_opts = ["New", "Good", "Fair", "Poor"]
+                current_cond = getattr(l, "condition", None) or "Good"
+                new_cond = st.selectbox(
+                    "Condition",
+                    options=cond_opts,
+                    index=cond_opts.index(current_cond) if current_cond in cond_opts else 1,
+                )
+
+                c_save, c_cancel = st.columns(2)
+                save = c_save.form_submit_button("Save")
+                cancel = c_cancel.form_submit_button("Cancel")
+
+            # Handle form actions
+            if save:
+                try:
+                    updated = update_listing(
+                        db,
+                        listing_id=l.id,
+                        title=new_title,
+                        description=new_desc,
+                        price=float(new_price),
+                        condition=new_cond,
+                    )
+                    st.session_state.pop(f"editing_{l.id}", None)
+                    st.success("Listing updated.")
+                    st.rerun()
+                except ValueError as e:
+                    st.error(str(e))
+                except Exception:
+                    st.error("Something went wrong updating the listing.")
+            if cancel:
+                st.session_state.pop(f"editing_{l.id}", None)
+                st.info("Edit cancelled.")
+                st.rerun()
+
+        
+          
+        # Delete button (with confirmation)  # <-- #79
+        if is_owner:
+            if st.button("Delete Listing", key=f"delete-{l.id}"):
+                st.session_state[f"confirm_del_{l.id}"] = True
+                st.rerun()
+
+        # Render confirmation UI if requested (owner only)
+        if is_owner and st.session_state.get(f"confirm_del_{l.id}", False):
+            st.warning("Are you sure you want to delete this listing? This cannot be undone.")
+            c1, c2 = st.columns(2)
+            if c1.button("Yes, delete", key=f"confirm-yes-{l.id}"):
+                deleted = delete_listing(db, listing_id=l.id)
+                st.session_state.pop(f"confirm_del_{l.id}", None)
+                st.success("Deleted.") if deleted else st.error("Listing not found.")
+                st.rerun()
+            if c2.button("Cancel", key=f"confirm-no-{l.id}"):
+                st.session_state.pop(f"confirm_del_{l.id}", None)
+                st.info("Deletion cancelled.")
+                st.rerun()
+
 
         # Show images if any
         if l.images:
@@ -90,6 +178,9 @@ else:
                     col.image(img.url, width=150)
                 except FileNotFoundError:
                     col.text("[Image not found]")
+
+        # Separator for next listing
         st.markdown("---")
+
 
 db.close()
