@@ -74,7 +74,7 @@ with st.form("login_form"):
                         
                         st.success("Login successful! 🎉")
                         st.balloons()
-                        st.rerun()
+                        st.switch_page("pages/4_Profile.py")
                         
                 finally:
                     db.close()

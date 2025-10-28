@@ -43,6 +43,21 @@ st.title("📝 Signup")
 st.write("Create a new account with your @charlotte.edu email address.")
 st.info("Password requirements: At least 8 characters with 1 special character")
 
+# Check if user is already authenticated
+if st.session_state.get("authenticated", False):
+    st.success(f"✅ You are already logged in as {st.session_state.get('user_email', '')}")
+    if st.button("Go to Profile"):
+        st.switch_page("pages/4_Profile.py")
+    st.stop()
+
+# Show success message if redirected from successful signup
+if st.session_state.get("signup_success"):
+    st.success("🎉 Signup successful! You are now logged in.")
+    st.info("You can now browse listings or create your own!")
+    if st.button("Go to Profile"):
+        st.switch_page("pages/4_Profile.py")
+    st.stop()
+
 with st.form("signup_form"):
     email = st.text_input("Student Email", placeholder="you@charlotte.edu")
     password = st.text_input("Password", type="password", 
@@ -51,6 +66,9 @@ with st.form("signup_form"):
     submitted = st.form_submit_button("Sign Up")
 
     if submitted:
+        if "form_data" in st.session_state:
+            del st.session_state["form_data"]
+
         if not email.strip():
             st.error("Please enter your student email.")
         else:
@@ -76,9 +94,11 @@ with st.form("signup_form"):
                         st.session_state["user_email"] = user.email
                         st.session_state["user_id"] = user.id
                         st.session_state["authenticated"] = True
+                        st.session_state["signup_success"] = True
                         
-                        st.success("Signup successful! 🎉 You are now logged in.")
-                        st.rerun()
+                        st.success("Signup successful! 🎉 You are now logged in. Redirecting to profile.")
+                        st.switch_page("pages/4_Profile.py")
+
                         
                     except ValueError as e:
                         st.error(str(e))
