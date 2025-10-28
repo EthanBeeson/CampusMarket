@@ -192,10 +192,7 @@ def display_listing_card(listing, images, current_user_id):
         <div class="listing-date">Posted on {listing.created_at.strftime('%B %d, %Y at %I:%M %p')}</div>
     </div>
     """, unsafe_allow_html=True)
-    
-    # Debug info - show ownership status
-    st.write(f"🔍 **Debug Info:** Listing User ID: {listing.user_id}, Current User ID: {current_user_id}, Can Delete: {listing.user_id == current_user_id}")
-    
+        
     # Display listing images
     if images:
         st.write("**Images:**")
