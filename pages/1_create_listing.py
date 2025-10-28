@@ -85,7 +85,9 @@ with st.form("create_listing_form", clear_on_submit=False):
     # Condition selector (sourced from backend allowed list)
     condition = st.selectbox("Condition", ALLOWED_CONDITIONS, index=ALLOWED_CONDITIONS.index("Good") if "Good" in ALLOWED_CONDITIONS else 0)
     price = st.number_input("Price (USD)", min_value=0.0, step=1.0, format="%.2f")
-    contact = st.text_input("Contact Information", placeholder="Email and/or Phone Number")
+    #contact = st.text_input("Contact Information", placeholder="Email and/or Phone Number")
+    contact_email = st.text_input("Contact Email (optional)", placeholder="example@email.com")
+    contact_phone = st.text_input("Contact Phone (optional)", placeholder="e.g. 555-123-4567")
     images = st.file_uploader(
         "Upload Item Pictures",
         type=["png", "jpg", "jpeg"],
@@ -102,8 +104,11 @@ with st.form("create_listing_form", clear_on_submit=False):
             errors.append("Description is required.")
         if price is None or price < 0:
             errors.append("Price must be 0 or greater.")
-        if not contact.strip():
-            errors.append("Contact information is required.")
+        #if not contact.strip():
+            #errors.append("Contact information is required.")
+        if not contact_email.strip() and not contact_phone.strip():
+            errors.append("At least one contact method (email or phone) is required.")
+
 
         if errors:
             for e in errors:
@@ -130,10 +135,11 @@ with st.form("create_listing_form", clear_on_submit=False):
                     price=price,
                     condition=condition,
                     image_urls=saved_paths,   # store local file paths in DB
-                    user_id=user_id
+                    user_id=user_id,
                 )
                 st.success(f"Listing created: {item.title}")
                 if saved_paths:
-                    st.image(saved_paths, caption="Uploaded Images", use_column_width=True)
+                    #st.image(saved_paths, caption="Uploaded Images", use_column_width=True)
+                    st.image(saved_paths, caption="Uploaded Images", use_container_width=True)
             finally:
                 db.close()

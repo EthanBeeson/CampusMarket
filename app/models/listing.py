@@ -19,7 +19,11 @@ class Listing(Base):
     #is_sold (story 15)
     is_sold = Column(Boolean, nullable=False, default=False, server_default="0")
 
-      # Foreign key to User
+    #contact info
+    contact_email = Column(String(100), nullable=True)
+    contact_phone = Column(String(20), nullable=True)
+
+    # Foreign key to User
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     # Relationship to User

@@ -14,7 +14,8 @@ ALLOWED_CONDITIONS = ["New", "Like New", "Good", "Fair", "For Parts"]
 #=========================================#
 
 # Create a listing
-def create_listing(db: Session, title: str, description: str, price: float, image_urls: list, user_id: int, condition: str = "Good"):
+def create_listing(db: Session, title: str, description: str, price: float, image_urls: list, user_id: int, condition: str = "Good", contact_email: str = None,
+contact_phone: str = None):
     """Create a listing and persist images, user and condition."""
     # Validate condition
     if condition is None:

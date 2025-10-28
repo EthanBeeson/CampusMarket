@@ -13,6 +13,7 @@ from app.models.listing import Listing
 from app.models.image import Image
 from app.models.user import User
 from app.crud.users import update_user_profile, delete_user_profile_picture
+from app.models.message import Message
 
 # Charlotte colors styling
 st.markdown(
@@ -108,6 +109,10 @@ def get_listing_images(db, listing_id):
     stmt = select(Image).where(Image.listing_id == listing_id)
     return db.execute(stmt).scalars().all()
 
+def get_received_messages(db, user_id):
+    """Get all messages received by this user"""
+    return db.query(Message).filter(Message.receiver_id == user_id).order_by(Message.created_at.desc()).all()
+
 def save_profile_picture(uploaded_file, user_id):
     """Save profile picture to uploads directory"""
     upload_dir = "uploads/profile_pictures"
@@ -199,7 +204,8 @@ def display_listing_card(listing, images, current_user_id):
             if idx < 3:  # Show max 3 images
                 with image_cols[idx]:
                     if os.path.exists(img.url):
-                        st.image(img.url, use_column_width=True, caption=f"Image {idx+1}")
+                        #st.image(img.url, use_column_width=True, caption=f"Image {idx+1}")
+                        st.image(img.url, use_container_width=True, caption=f"Image {idx+1}")
     
     # Only show delete button if user owns the listing
     if listing.user_id == current_user_id:
@@ -368,6 +374,34 @@ with col2:
                 except Exception as e:
                     st.error(f"Error saving profile picture: {e}")
 
+st.markdown('</div>', unsafe_allow_html=True)
+
+# --- Messages Section ---
+st.markdown('<div class="listings-container">', unsafe_allow_html=True)
+st.header("💬 Messages Received")
+
+db = SessionLocal()
+try:
+    messages = get_received_messages(db, user_id)
+    if not messages:
+        st.info("You have no messages yet.")
+    else:
+        for msg in messages:
+            listing = db.query(Listing).filter(Listing.id == msg.listing_id).first()
+            listing_title = listing.title if listing else "Listing Deleted"
+
+            sender_name = getattr(msg.sender, "display_name", f"User {msg.sender_id}")
+            
+            st.markdown(f"""
+            <div class="message-card">
+                <b>From:</b> User {msg.sender_id} <br>
+                <b>Regarding:</b> {listing_title} <br>
+                <b>Message:</b> {msg.content} <br>
+                <i>Sent on {msg.created_at.strftime('%b %d, %Y %I:%M %p')}</i>
+            </div>
+            """, unsafe_allow_html=True)
+finally:
+    db.close()
 st.markdown('</div>', unsafe_allow_html=True)
 
 # User's Listings Section

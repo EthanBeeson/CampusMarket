@@ -4,6 +4,7 @@ from app.models.listing import Listing
 from app.models.image import Image
 from app.crud.listings import create_listing, get_listings, delete_listing, search_listings
 from app.crud.listings import mark_listing_sold, ForbiddenAction, update_listing, ALLOWED_CONDITIONS
+from app.models.message import Message
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -185,6 +186,39 @@ else:
                     col.image(img.url, width=150)
                 except FileNotFoundError:
                     col.text("[Image not found]")
+        # 💬 Message the Seller Section
+        if "user_id" in st.session_state and st.session_state["user_id"] != l.user_id:
+
+            # Small button to toggle message box
+            if st.button("💬 Contact Seller", key=f"contact_btn_{l.id}", help="Click to send a message", use_container_width=False):
+                st.session_state[f"show_msg_box_{l.id}"] = not st.session_state.get(f"show_msg_box_{l.id}", False)
+
+            # Show message box only if toggled
+            if st.session_state.get(f"show_msg_box_{l.id}", False):
+                message_text = st.text_area(
+                    "Your Message",
+                    placeholder="Hi! I'm interested in your listing. Is it still available?",
+                    key=f"message_text_{l.id}"
+                )
+
+                if st.button("Send Message", key=f"send_message_{l.id}"):
+                    if not message_text.strip():
+                        st.error("⚠️ Message cannot be empty.")
+                    else:
+                        db = SessionLocal()
+                        try:
+                            from app.crud.messages import send_message
+                            send_message(
+                                db=db,
+                                sender_id=st.session_state["user_id"],
+                                receiver_id=l.user_id,
+                                listing_id=l.id,
+                                content=message_text,
+                            )
+                            st.success("✅ Message sent to seller via in-app messaging!")
+                            st.session_state[f"show_msg_box_{l.id}"] = False  # Hide after sending
+                        finally:
+                            db.close()
 
         # Separator for next listing
         st.markdown("---")
