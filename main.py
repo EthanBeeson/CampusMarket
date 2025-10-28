@@ -178,14 +178,69 @@ else:
 
         # (condition filter moved to the sidebar)
 
-        # Show images if any
+        from PIL import Image
+        import streamlit as st
+
+        # --- Carousel for a single listing ---
         if l.images:
-            cols = st.columns(len(l.images))
-            for col, img in zip(cols, l.images):
-                try:
-                    col.image(img.url, width=150)
-                except FileNotFoundError:
-                    col.text("[Image not found]")
+            # Track current image index per listing
+            if f"img_idx_{l.id}" not in st.session_state:
+                st.session_state[f"img_idx_{l.id}"] = 0
+
+            img_idx = st.session_state[f"img_idx_{l.id}"]
+            total_imgs = len(l.images)
+
+            try:
+                # Load and resize image to consistent size
+                img_path = l.images[img_idx].url  # e.g. "uploads/image123.jpg"
+                img = Image.open(img_path).convert("RGB").resize((300, 300))
+
+                # --- Centered image + arrow alignment container ---
+                st.markdown(
+                    """
+                    <div style="
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        margin-top: 10px;
+                        margin-bottom: 5px;
+                    ">
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+                # Center image
+                st.image(img, width=300)
+
+                # Arrow buttons aligned with image width
+                button_col1, button_col2, button_col3 = st.columns([1, 1.2, 1])
+                with button_col1:
+                    if st.button("<-", key=f"prev_{l.id}"):
+                        st.session_state[f"img_idx_{l.id}"] = (img_idx - 1) % total_imgs
+                        st.rerun()
+                with button_col3:
+                    if st.button("->", key=f"next_{l.id}"):
+                        st.session_state[f"img_idx_{l.id}"] = (img_idx + 1) % total_imgs
+                        st.rerun()
+
+                st.markdown("</div>", unsafe_allow_html=True)
+
+                # Optional caption
+                st.markdown(
+                    f"<p style='text-align:center; color:gray;'>Image {img_idx + 1} of {total_imgs}</p>",
+                    unsafe_allow_html=True,
+                )
+
+            except FileNotFoundError:
+                st.warning("[Image not found]")
+            except Exception as e:
+                st.error(f"Error displaying image: {e}")
+
+        else:
+            st.info("No images available for this listing.")
+            
+
         # 💬 Message the Seller Section
         if "user_id" in st.session_state and st.session_state["user_id"] != l.user_id:
 
