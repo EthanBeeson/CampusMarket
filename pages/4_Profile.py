@@ -245,51 +245,84 @@ try:
 finally:
     db.close()
 
-# Profile info form
+# Profile info form / summary
 st.subheader("Profile Details")
-with st.form(key="profile_form", clear_on_submit=False):
-    full_name_val = st.text_input("Full Name", value=getattr(db_user, "full_name", "") if db_user else "")
-    display_name_val = st.text_input("Display Name", value=getattr(db_user, "display_name", "") if db_user else "")
-    phone_val = st.text_input("Phone", value=getattr(db_user, "phone", "") if db_user else "")
-    bio_val = st.text_area("Bio", value=getattr(db_user, "bio", "") if db_user else "", height=120)
-    save_profile = st.form_submit_button("Save Profile")
 
-    if save_profile:
-        # Client-side validation before calling server
-        errors = []
-        if full_name_val and len(full_name_val.strip()) > 100:
-            errors.append("Full name must be 100 characters or fewer.")
-        if display_name_val and len(display_name_val.strip()) > 50:
-            errors.append("Display name must be 50 characters or fewer.")
-        if bio_val and len(bio_val.strip()) > 500:
-            errors.append("Bio must be 500 characters or fewer.")
-        # basic phone validation
-        phone_pattern = r'^\+?[0-9\-\s\(\)]{7,20}$'
-        if phone_val and not re.match(phone_pattern, phone_val.strip()):
-            errors.append("Phone number appears invalid.")
+# Determine if profile is already populated
+profile_complete = False
+if db_user:
+    profile_complete = any([
+        bool(getattr(db_user, "full_name", "")),
+        bool(getattr(db_user, "display_name", "")),
+        bool(getattr(db_user, "phone", "")),
+        bool(getattr(db_user, "bio", "")),
+        bool(getattr(db_user, "profile_picture", "")),
+    ])
 
-        if errors:
-            for e in errors:
-                st.error(e)
-        else:
-            db = SessionLocal()
-            try:
+# Initialize editing state: if profile is empty, start in edit/create mode
+if "editing_profile" not in st.session_state:
+    st.session_state["editing_profile"] = not profile_complete
+
+if not st.session_state.get("editing_profile", False):
+    # Show read-only summary with an Edit button
+    st.write("**Full Name:**", getattr(db_user, "full_name", ""))
+    st.write("**Display Name:**", getattr(db_user, "display_name", ""))
+    st.write("**Phone:**", getattr(db_user, "phone", ""))
+    st.write("**Bio:**", getattr(db_user, "bio", ""))
+
+    col_left, col_right = st.columns([3, 1])
+    with col_right:
+        if st.button("Edit Profile", key=f"edit_profile_{user_id}"):
+            st.session_state["editing_profile"] = True
+            st.rerun()
+else:
+    # Editable form (prefilled)
+    with st.form(key="profile_form", clear_on_submit=False):
+        full_name_val = st.text_input("Full Name", value=getattr(db_user, "full_name", "") if db_user else "")
+        display_name_val = st.text_input("Display Name", value=getattr(db_user, "display_name", "") if db_user else "")
+        phone_val = st.text_input("Phone", value=getattr(db_user, "phone", "") if db_user else "")
+        bio_val = st.text_area("Bio", value=getattr(db_user, "bio", "") if db_user else "", height=120)
+        save_profile = st.form_submit_button("Save Profile")
+
+        if save_profile:
+            # Client-side validation before calling server
+            errors = []
+            if full_name_val and len(full_name_val.strip()) > 100:
+                errors.append("Full name must be 100 characters or fewer.")
+            if display_name_val and len(display_name_val.strip()) > 50:
+                errors.append("Display name must be 50 characters or fewer.")
+            if bio_val and len(bio_val.strip()) > 500:
+                errors.append("Bio must be 500 characters or fewer.")
+            # basic phone validation
+            phone_pattern = r'^\+?[0-9\-\s\(\)]{7,20}$'
+            if phone_val and not re.match(phone_pattern, phone_val.strip()):
+                errors.append("Phone number appears invalid.")
+
+            ## If no errors detected, proceed to update
+            if errors:
+                for e in errors:
+                    st.error(e)
+            else:
+                db = SessionLocal()
                 try:
-                    success = update_user_profile(db, user_id=user_id, full_name=full_name_val,
-                                                  display_name=display_name_val, phone=phone_val, bio=bio_val)
-                except ValueError as ve:
-                    st.error(str(ve))
-                    success = False
+                    try:
+                        success = update_user_profile(db, user_id=user_id, full_name=full_name_val,
+                                                      display_name=display_name_val, phone=phone_val, bio=bio_val)
+                    except ValueError as ve:
+                        st.error(str(ve))
+                        success = False
 
-                if success:
-                    st.success("Profile updated successfully.")
-                    st.rerun()
-                else:
-                    st.error("Failed to update profile.")
-            except Exception as e:
-                st.error(f"Error updating profile: {e}")
-            finally:
-                db.close()
+                    if success:
+                        st.success("Profile updated successfully.")
+                        # hide the form after save and refresh values
+                        st.session_state["editing_profile"] = False
+                        st.rerun()
+                    else:
+                        st.error("Failed to update profile.")
+                except Exception as e:
+                    st.error(f"Error updating profile: {e}")
+                finally:
+                    db.close()
 
 # Profile Picture Section
 st.subheader("Profile Picture")
