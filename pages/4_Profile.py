@@ -331,7 +331,6 @@ st.header("Profile Information")
 
 # Display user email (username)
 st.write(f"**Email:** {user_email}")
-st.write(f"**User ID:** {user_id}")
 
 # Load user record for profile fields
 db_user = None
