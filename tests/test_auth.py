@@ -9,7 +9,7 @@ from app.crud.users import (
     create_user
 )
 from app.models.user import User
-from app.db import Base  # or whatever your base is called
+from app.db import Base
 
 # ----------------- Test Setup -----------------
 @pytest.fixture
