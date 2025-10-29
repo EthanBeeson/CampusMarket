@@ -42,6 +42,13 @@ st.title("🔑 Login")
 
 st.write("Please sign in with your Charlotte student email and password.")
 
+# Check if user is already authenticated
+if st.session_state.get("authenticated", False):
+    st.success(f"✅ You are already logged in as {st.session_state.get('user_email', '')}")
+    if st.button("Go to Profile"):
+        st.switch_page("pages/4_Profile.py")
+    st.stop()
+
 with st.form("login_form"):
     email = st.text_input("Student Email", placeholder="you@charlotte.edu")
     password = st.text_input("Password", type="password")
