@@ -90,10 +90,15 @@ st.markdown(
         color: #005035;
         font-size: 1.1em;
     }
-    /* Profile header inline avatar */
-    .profile-inline { display: flex; align-items: center; gap: 12px; }
-    .profile-avatar { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; }
-    .profile-title { font-size: 28px; font-weight: 700; margin: 0; }
+    /* Profile header inline avatar - tweaked to match design */
+    .profile-inline { display: flex; align-items: center; gap: 8px; }
+    .profile-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; margin-right: 8px; }
+    .profile-title { font-size: 22px; font-weight: 700; margin: 0; }
+    /* Responsive tweak for small screens */
+    @media (max-width: 600px) {
+        .profile-avatar { width: 40px; height: 40px; }
+        .profile-title { font-size: 18px; }
+    }
     </style>
     """,
     unsafe_allow_html=True
@@ -274,7 +279,7 @@ with col_title:
                     if success:
                         st.success("Profile picture removed.")
                         st.session_state.pop(f"confirm_remove_pic_{user_id}", None)
-                        st.experimental_rerun()
+                        st.rerun()
                     else:
                         st.error("Could not remove profile picture.")
                 finally:
@@ -286,35 +291,39 @@ with col_title:
         st.info("No profile picture uploaded yet.")
 
 with col_pic:
-    # uploader (small) in the right column
-    uploaded_file = st.file_uploader("Upload", type=["jpg", "jpeg", "png"], key="header_profile_pic_uploader")
-    if uploaded_file is not None:
-        if uploaded_file.size > 5 * 1024 * 1024:
-            st.error("Image too large (<5MB)")
-        else:
-            st.image(uploaded_file, width=120, caption="Preview")
-            if st.button("Save", key=f"header_save_pic_{user_id}"):
-                try:
-                    new_profile_path = save_profile_picture(uploaded_file, user_id)
-                    db = SessionLocal()
+    # show uploader only when no profile picture exists; after saving the uploader will disappear on rerun
+    if not profile_pic_path:
+        uploaded_file = st.file_uploader("Upload", type=["jpg", "jpeg", "png"], key="header_profile_pic_uploader")
+        if uploaded_file is not None:
+            if uploaded_file.size > 5 * 1024 * 1024:
+                st.error("Image too large (<5MB)")
+            else:
+                st.image(uploaded_file, width=120, caption="Preview")
+                if st.button("Save", key=f"header_save_pic_{user_id}"):
                     try:
-                        update_user_profile(db, user_id=user_id, profile_picture=new_profile_path)
-                    finally:
-                        db.close()
+                        new_profile_path = save_profile_picture(uploaded_file, user_id)
+                        db = SessionLocal()
+                        try:
+                            update_user_profile(db, user_id=user_id, profile_picture=new_profile_path)
+                        finally:
+                            db.close()
 
-                    # cleanup old files
-                    upload_dir = "uploads/profile_pictures"
-                    for file in os.listdir(upload_dir):
-                        if file.startswith(f"profile_{user_id}") and file != os.path.basename(new_profile_path):
-                            try:
-                                os.remove(os.path.join(upload_dir, file))
-                            except OSError:
-                                pass
+                        # cleanup old files
+                        upload_dir = "uploads/profile_pictures"
+                        for file in os.listdir(upload_dir):
+                            if file.startswith(f"profile_{user_id}") and file != os.path.basename(new_profile_path):
+                                try:
+                                    os.remove(os.path.join(upload_dir, file))
+                                except OSError:
+                                    pass
 
-                    st.success("Saved")
-                    st.experimental_rerun()
-                except Exception as e:
-                    st.error(f"Error: {e}")
+                        st.success("Saved")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+    else:
+        # profile picture exists -> hide uploader
+        st.write("")
 
 # Profile Section
 st.markdown('<div class="profile-container">', unsafe_allow_html=True)
