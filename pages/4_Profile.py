@@ -331,7 +331,6 @@ st.header("Profile Information")
 
 # Display user email (username)
 st.write(f"**Email:** {user_email}")
-st.write(f"**User ID:** {user_id}")
 
 # Load user record for profile fields
 db_user = None
@@ -340,11 +339,6 @@ try:
     db_user = db.query(User).filter(User.id == user_id).first()
 finally:
     db.close()
-
-
-
-# Profile info form / summary
-st.subheader("Profile Details")
 
 # Determine if profile is already populated
 profile_complete = False

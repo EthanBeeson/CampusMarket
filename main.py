@@ -218,7 +218,7 @@ else:
                 # SINGLE centered button to advance
                 bL, bC, bR = st.columns([2, 1, 2])
                 with bC:
-                    if st.button("Next ▸", key=f"next_{l.id}", use_container_width=True):
+                    if st.button("->", key=f"next_{l.id}", use_container_width=True):
                         st.session_state[key_idx] = (img_idx + 1) % total
                         st.rerun()
 
