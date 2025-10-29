@@ -5,10 +5,11 @@ from sqlalchemy.orm import sessionmaker
 from app.db import Base
 from app.models.listing import Listing
 from app.models.image import Image
-from app.models.user import User  # <-- added
+from app.models.user import User
 from app.crud.listings import create_listing, get_listings, delete_listing
 
 # --- Setup in-memory test database ---
+
 @pytest.fixture(scope="function")
 def test_db():
     engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
