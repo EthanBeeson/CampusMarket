@@ -340,11 +340,6 @@ try:
 finally:
     db.close()
 
-
-
-# Profile info form / summary
-st.subheader("Profile Details")
-
 # Determine if profile is already populated
 profile_complete = False
 if db_user:
