@@ -22,10 +22,10 @@ def db():
     db.add(owner); db.commit(); db.refresh(owner)
 
     listings = [
-        Listing(title="Mountain Bike", description="Used bicycle, good condition", price=150.0, user_id=owner.id),  # <-- added user_id
-        Listing(title="Road Bicycle", description="Lightweight frame", price=300.0, user_id=owner.id),
-        Listing(title="Gaming Laptop", description="RTX 4060, 16GB RAM", price=1200.0, user_id=owner.id),
-        Listing(title="Desk Chair", description="Ergonomic and comfortable", price=100.0, user_id=owner.id),
+        Listing(title="Mountain Bike", description="Used bicycle, good condition", price=150.0, user_id=owner.id, category="Electronics"),
+        Listing(title="Road Bicycle", description="Lightweight frame", price=300.0, user_id=owner.id, category="Electronics"),
+        Listing(title="Gaming Laptop", description="RTX 4060, 16GB RAM", price=1200.0, user_id=owner.id, category="Electronics"),
+        Listing(title="Desk Chair", description="Ergonomic and comfortable", price=100.0, user_id=owner.id, category="Furniture"),
     ]
     db.add_all(listings)
     db.commit()
@@ -81,3 +81,20 @@ def test_no_results(db):
     """Return empty list if no matches are found."""
     results = search_listings(db, keyword="spaceship")
     assert results == []
+
+
+def test_category_filter_single(db):
+    """Filtering by a single category should only return matching listings."""
+    results = search_listings(db, categories=["Furniture"])
+    assert all(getattr(l, "category", None) == "Furniture" for l in results)
+    assert any("Desk Chair" in l.title for l in results)
+
+
+def test_category_filter_multiple(db):
+    """Filtering by multiple categories should return listings in any of those categories."""
+    results = search_listings(db, categories=["Electronics", "Furniture"])
+    cats = {getattr(l, "category", None) for l in results}
+    assert cats.issubset({"Electronics", "Furniture"})
+    # ensure we get items from both categories
+    titles = {l.title for l in results}
+    assert "Gaming Laptop" in titles and "Desk Chair" in titles
