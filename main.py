@@ -1,5 +1,7 @@
 import streamlit as st
 from PIL import Image
+import os
+import base64
 from app.db import Base, engine, SessionLocal
 from app.models.listing import Listing
 from app.models.image import Image as ImageModel
@@ -9,6 +11,8 @@ from app.crud.listings import (
 )
 from app.crud.listings import ALLOWED_CATEGORIES
 from app.models.message import Message
+from app.models.user import User
+from app.crud.reviews import get_reviews_for_user, get_user_average_rating
 
 st.set_page_config(page_title="Campus Market", layout="wide")
 
@@ -106,6 +110,54 @@ st.markdown(
         border: none !important;
     }
 
+    /* Owner info section on listing card */
+    .owner-section {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      margin-bottom: 12px;
+      background: rgba(255,255,255,0.05);
+    }
+    .owner-section:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    .owner-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid rgba(255,255,255,0.2);
+    }
+    .owner-avatar-placeholder {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #87B481;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      border: 2px solid rgba(255,255,255,0.2);
+    }
+    .owner-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .owner-name {
+      font-weight: 600;
+      color: white;
+      font-size: 0.95em;
+    }
+    .owner-rating {
+      font-size: 0.85em;
+      color: rgba(255,255,255,0.7);
+    }
 
     </style>
     """,
@@ -113,7 +165,7 @@ st.markdown(
 )
 
 # Title
-st.title("🏫 Campus Market")
+st.title("Campus Market")
 st.write("Welcome to Campus Market! Buy and sell items with UNCC students.")
 
 # Start session
@@ -176,6 +228,122 @@ else:
         title_text = f"~~{l.title}~~" if is_sold else l.title
 
         st.markdown('<div class="card">', unsafe_allow_html=True)
+
+        # --- Owner section (clickable to view public profile) ---
+        owner = db.query(User).filter(User.id == l.user_id).first()
+
+        # Always render owner container; use fallbacks when user or profile picture missing
+        owner_exists = bool(owner)
+        owner_display_name = (owner.full_name or owner.display_name) if owner_exists else None
+        owner_display_name = owner_display_name or f"User {getattr(l, 'user_id', 'Unknown')}"
+
+        rating_text = "No ratings"
+        if owner_exists:
+            avg_rating = get_user_average_rating(db, owner.id)
+            rating_text = f"⭐ {avg_rating:.1f}" if avg_rating else "No ratings"
+
+        # Resolve profile picture if available
+        profile_pic_path = None
+        if owner_exists and owner.profile_picture:
+            candidates = [
+                owner.profile_picture,
+                os.path.join(os.getcwd(), owner.profile_picture),
+                os.path.join(os.getcwd(), "uploads", "profile_pictures", owner.profile_picture),
+            ]
+            for p in candidates:
+                try:
+                    if p and os.path.exists(p):
+                        profile_pic_path = p
+                        break
+                except Exception:
+                    continue
+
+        # Build owner HTML block
+        owner_parts = []
+        owner_parts.append(f'<div class="owner-section" style="display:flex;align-items:center;gap:10px;">')
+
+        if profile_pic_path:
+            try:
+                with open(profile_pic_path, "rb") as f:
+                    img_data = f.read()
+                b64 = base64.b64encode(img_data).decode()
+                mime = "image/jpeg" if profile_pic_path.lower().endswith((".jpg", ".jpeg")) else "image/png"
+                owner_parts.append(f'<img class="owner-avatar" src="data:{mime};base64,{b64}" alt="{owner_display_name}">')
+            except Exception:
+                owner_parts.append(f'<div class="owner-avatar-placeholder">{owner_display_name[0].upper()}</div>')
+        else:
+            owner_parts.append(f'<div class="owner-avatar-placeholder">{owner_display_name[0].upper()}</div>')
+
+        owner_parts.append(f'<div class="owner-info"><div class="owner-name">{owner_display_name}</div><div class="owner-rating">{rating_text}</div></div>')
+        owner_parts.append('</div>')
+
+        # Render owner block with a View/Hide toggle
+        toggle_key = f"show_public_profile_{getattr(l,'user_id','unknown')}_{l.id}"
+        is_shown = st.session_state.get(toggle_key, False)
+        btn_label = "Hide" if is_shown else "View"
+
+        col_left, col_right = st.columns([0.66, 0.34])
+        with col_left:
+            # Render owner HTML block (avatar + name + rating)
+            st.markdown("".join(owner_parts), unsafe_allow_html=True)
+        with col_right:
+            # Button to open the dedicated public profile page (same-tab)
+            if owner_exists:
+                if st.button("Open Profile", key=f"open_page_{getattr(l,'user_id','unknown')}_{l.id}"):
+                    try:
+                        st.set_query_params(user_id=str(owner.id))
+                    except Exception:
+                        # fallback to older API name
+                        try:
+                            st.set_query_params(user_id=owner.id)
+                        except Exception:
+                            pass
+                    st.switch_page("pages/5_Public_Profile.py")
+
+            # Small toggle to inline-expand the profile preview
+            if st.button(btn_label, key=f"open_profile_{getattr(l,'user_id','unknown')}_{l.id}"):
+                st.session_state[toggle_key] = not is_shown
+                st.rerun()
+
+        # If toggled, render inline expanded public profile
+        if st.session_state.get(toggle_key, False):
+            try:
+                st.markdown('<div style="background: rgba(255,255,255,0.03); padding:12px; border-radius:8px; margin-top:8px;">', unsafe_allow_html=True)
+                cA, cB = st.columns([0.18, 0.82])
+                with cA:
+                    if profile_pic_path:
+                        try:
+                            st.image(profile_pic_path, width=96)
+                        except Exception:
+                            st.markdown(f'<div class="owner-avatar-placeholder" style="width:96px;height:96px;font-size:32px;">{owner_display_name[0].upper()}</div>', unsafe_allow_html=True)
+                    else:
+                        st.markdown(f'<div class="owner-avatar-placeholder" style="width:96px;height:96px;font-size:32px;">{owner_display_name[0].upper()}</div>', unsafe_allow_html=True)
+                with cB:
+                    st.markdown(f"<div style='color:white; font-size:1.1em; font-weight:700;'>{owner_display_name}</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='color:rgba(255,255,255,0.85); margin-bottom:8px;'>{rating_text}</div>", unsafe_allow_html=True)
+                    if owner_exists and getattr(owner, 'bio', None):
+                        st.markdown(f"<div style='color:rgba(255,255,255,0.9); margin-bottom:8px;'>{owner.bio}</div>", unsafe_allow_html=True)
+
+                    if owner_exists:
+                        owner_listings = db.query(Listing).filter(Listing.user_id == owner.id).all()
+                        if owner_listings:
+                            st.markdown("**Listings:**")
+                            for ol in owner_listings[:5]:
+                                st.markdown(f"- {ol.title} — ${float(ol.price):.2f}")
+
+                        reviews = get_reviews_for_user(db, owner.id)
+                        if reviews:
+                            st.markdown("**Recent Reviews:**")
+                            for r in reviews[:3]:
+                                reviewer_name = r.reviewer.display_name or r.reviewer.full_name or f"User {r.reviewer_id}"
+                                comment = (r.comment[:120] + '...') if r.comment and len(r.comment) > 120 else (r.comment or '')
+                                st.markdown(f"- **{reviewer_name}** — {r.rating}/5 — {comment}")
+                    else:
+                        st.markdown("User record not found.")
+
+                st.markdown('</div>', unsafe_allow_html=True)
+            except Exception:
+                st.info("Could not load public profile details.")
 
         # Title centered
         st.markdown(
