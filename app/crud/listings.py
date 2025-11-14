@@ -6,6 +6,8 @@ from rapidfuzz import fuzz
 
 # Allowed values for the listing condition. Keep in sync with UI options.
 ALLOWED_CONDITIONS = ["New", "Like New", "Good", "Fair", "For Parts"]
+# Allowed categories for listings
+ALLOWED_CATEGORIES = ["Books", "Electronics", "Furniture", "Clothing", "Hobby", "Other"]
 
 
 #====== CRUD Operations for Listings ======#
@@ -15,7 +17,7 @@ ALLOWED_CONDITIONS = ["New", "Like New", "Good", "Fair", "For Parts"]
 
 # Create a listing
 def create_listing(db: Session, title: str, description: str, price: float, image_urls: list, user_id: int, condition: str = "Good", contact_email: str = None,
-contact_phone: str = None):
+                   contact_phone: str = None, category: str = "Other"):
     """Create a listing and persist images, user and condition."""
     # Validate condition
     if condition is None:
@@ -27,6 +29,15 @@ contact_phone: str = None):
         raise ValueError(f"Invalid condition '{condition}'. Allowed: {ALLOWED_CONDITIONS}")
 
     listing = Listing(title=title, description=description, price=price, user_id=user_id, condition=condition_clean)
+    # Validate and set category
+    if category is None:
+        category = "Other"
+    if not isinstance(category, str):
+        raise ValueError("Category must be a string")
+    category_clean = category.strip()
+    if category_clean not in ALLOWED_CATEGORIES:
+        raise ValueError(f"Invalid category '{category}'. Allowed: {ALLOWED_CATEGORIES}")
+    listing.category = category_clean
     
     # Attach images
     images = [Image(url=url) for url in image_urls]
@@ -60,7 +71,7 @@ def delete_listing(db: Session, listing_id: int):
 
 # Update a listing
 def update_listing(db: Session, listing_id: int, title: str = None, description: str = None,
-                   price: float = None, condition: str = None, add_images: list = None, remove_image_ids: list = None):
+                   price: float = None, condition: str = None, category: str = None, add_images: list = None, remove_image_ids: list = None):
     listing = db.query(Listing).filter(Listing.id == listing_id).first()
     if not listing:
         return None
@@ -88,6 +99,14 @@ def update_listing(db: Session, listing_id: int, title: str = None, description:
         if condition_clean not in ALLOWED_CONDITIONS:
             raise ValueError(f"Invalid condition '{condition}'. Allowed: {ALLOWED_CONDITIONS}")
         listing.condition = condition_clean
+    # Update category if provided
+    if category is not None:
+        if not isinstance(category, str):
+            raise ValueError("Category must be a string")
+        category_clean = category.strip()
+        if category_clean not in ALLOWED_CATEGORIES:
+            raise ValueError(f"Invalid category '{category}'. Allowed: {ALLOWED_CATEGORIES}")
+        listing.category = category_clean
     # Add new images
     if add_images:
         new_images = [Image(url=url) for url in add_images]
@@ -112,7 +131,7 @@ def update_listing(db: Session, listing_id: int, title: str = None, description:
 
 def search_listings(db, keyword: str = None, threshold: int = 60,
                     min_price: float = None, max_price: float = None,
-                    conditions: list = None):
+                    conditions: list = None, categories: list = None):
     # --- Start with all listings ---
     q = db.query(Listing)
 
@@ -126,6 +145,10 @@ def search_listings(db, keyword: str = None, threshold: int = 60,
         # ensure we have a list of values
         if isinstance(conditions, (list, tuple, set)) and len(conditions) > 0:
             q = q.filter(Listing.condition.in_(list(conditions)))
+    # --- Apply category filters if provided ---
+    if categories:
+        if isinstance(categories, (list, tuple, set)) and len(categories) > 0:
+            q = q.filter(Listing.category.in_(list(categories)))
     listings = q.all()
 
     # --- Apply fuzzy keyword search if keyword is provided ---

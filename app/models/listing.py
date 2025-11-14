@@ -13,6 +13,9 @@ class Listing(Base):
     # Provide both a client-side default and a server_default so existing
     # inserts (tests or older code) get a sensible value without migration
     condition = Column(String(20), nullable=False, default="Good", server_default="Good")
+    # Category of the item (e.g. Books, Electronics). Not shown on cards by default
+    # but used for filtering. Provide server_default so existing DB rows get a value.
+    category = Column(String(50), nullable=False, default="Other", server_default="Other")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     

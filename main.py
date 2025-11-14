@@ -7,12 +7,24 @@ from app.crud.listings import (
     create_listing, get_listings, delete_listing, search_listings,
     mark_listing_sold, ForbiddenAction, update_listing, ALLOWED_CONDITIONS
 )
+from app.crud.listings import ALLOWED_CATEGORIES
 from app.models.message import Message
 
 st.set_page_config(page_title="Campus Market", layout="wide")
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
+
+# Ensure 'category' column exists in SQLite DB
+from sqlalchemy import text
+with engine.begin() as conn:
+    try:
+        cols = [row[1] for row in conn.execute(text("PRAGMA table_info(listings);"))]
+        if "category" not in cols:
+            # Add column with default 'Other' for existing rows
+            conn.execute(text("ALTER TABLE listings ADD COLUMN category VARCHAR(50) NOT NULL DEFAULT 'Other';"))
+    except Exception:
+        pass
 
 # ======= Global Styles (center content, tidy buttons, subtle card) ======= #
 st.markdown(
@@ -39,10 +51,62 @@ st.markdown(
         font-weight: 600;
         border: 1px solid rgba(255,255,255,0.15);
       }
+            /* Focused / active multiselect/select wrappers */
+            [data-testid="stSidebar"] .stMultiSelect div[data-baseweb="select"][data-focus="true"] > div,
+            .block-container .stMultiSelect div[data-baseweb="select"][data-focus="true"] > div,
       /* compact vertical spacing between stacked widgets */
       .element-container:has(> div.stButton) { margin: 0.2rem 0; }
       /* carousel nav buttons */
       .navbtn > button { width: 100%; }
+
+      /*  Make Category Buttons Colored Charlotte Green */
+      .stSidebar [data-baseweb="tag"] {
+          background-color: #005035 !important;   /* Charlotte green */
+          color: white !important;
+       }
+
+    /* Remove border color entirely from select widgets (multiselect/selectbox/combobox)*/
+    section[data-testid="stSidebar"] div[data-baseweb="select"] > div,
+    .block-container div[data-baseweb="select"] > div,
+    div[data-baseweb="select"] > div,
+    div[data-baseweb="select"][data-focus="true"] > div,
+    div[data-baseweb="select"][aria-expanded="true"] > div,
+    div[data-baseweb="select"]:focus-within > div,
+    .stSelectbox > div {
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    /* Remove any visible border/outline when sidebar inputs are focused */
+    section[data-testid="stSidebar"] input[type="text"]:focus,
+    section[data-testid="stSidebar"] input[type="search"]:focus,
+    section[data-testid="stSidebar"] input[type="number"]:focus,
+    section[data-testid="stSidebar"] textarea:focus,
+    section[data-testid="stSidebar"] .stTextInput:focus-within > div > div,
+    section[data-testid="stSidebar"] .stNumberInput:focus-within > div > div,
+    section[data-testid="stSidebar"] .stTextArea:focus-within > div > div {
+        outline: none !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
+
+    /* Also ensure focused inputs don't get an outline color from Streamlit */
+    section[data-testid="stSidebar"] input:focus,
+    section[data-testid="stSidebar"] textarea:focus {
+        outline-color: transparent !important;
+    }
+
+    /* Strong global override: remove any focus/border/box-shadow for elements inside the sidebar
+       This ensures Streamlit's default red focus styling is not shown for text inputs. */
+    section[data-testid="stSidebar"] *:focus,
+    section[data-testid="stSidebar"] *:focus-visible,
+    section[data-testid="stSidebar"] *:focus-within {
+        outline: none !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
+
+
     </style>
     """,
     unsafe_allow_html=True,
@@ -57,10 +121,28 @@ db = SessionLocal()
 
 # --- Sidebar search controls ---
 st.sidebar.header("Search & Filters")
-search_query = st.sidebar.text_input("Search by keyword")
-min_price = st.sidebar.number_input("Min Price", min_value=0.0, step=10.0)
-max_price = st.sidebar.number_input("Max Price", min_value=0.0, step=10.0)
+search_query = st.sidebar.text_input("Search by keyword", placeholder="e.g. textbook, laptop")
+
+# Use text_input with placeholder instead of number_input
+min_price_str = st.sidebar.text_input("Min Price", placeholder="-")
+max_price_str = st.sidebar.text_input("Max Price", placeholder="-")
+
+# Convert to floats only if user entered something
+def parse_price(value):
+    try:
+        return float(value) if value.strip() != "" else None
+    except ValueError:
+        return None
+
+min_price = parse_price(min_price_str)
+max_price = parse_price(max_price_str)
+# Default to 0.00 and +inf if not provided
+min_price = min_price if min_price is not None else float("0")
+max_price = max_price if max_price is not None else float("inf")
+
 conditions = st.sidebar.multiselect("Condition", ALLOWED_CONDITIONS)
+categories = st.sidebar.multiselect("Category", ALLOWED_CATEGORIES)
+
 
 # --- Fetch filtered listings or all listings ---
 if search_query or min_price or max_price or conditions:
@@ -70,6 +152,7 @@ if search_query or min_price or max_price or conditions:
         min_price=min_price if min_price > 0 else None,
         max_price=max_price if max_price > 0 else None,
         conditions=conditions if conditions else None,
+        categories=categories if categories else None,
     )
 else:
     listings = get_listings(db)
@@ -103,6 +186,7 @@ else:
         # Meta + description centered
         condition = getattr(l, "condition", "Unknown")
         st.markdown(f"<p class='center'><b>Condition:</b> {condition}</p>", unsafe_allow_html=True)
+
         if l.description:
             st.markdown(f"<p class='center'>{l.description}</p>", unsafe_allow_html=True)
 
@@ -150,6 +234,14 @@ else:
                     options=cond_opts,
                     index=cond_opts.index(current_cond) if current_cond in cond_opts else 0,
                 )
+                # Category selector in edit form
+                cat_opts = ALLOWED_CATEGORIES
+                current_cat = getattr(l, "category", None) or "Other"
+                new_cat = st.selectbox(
+                    "Category",
+                    options=cat_opts,
+                    index=cat_opts.index(current_cat) if current_cat in cat_opts else 0,
+                )
                 c_save, c_cancel = st.columns(2)
                 save = c_save.form_submit_button("Save")
                 cancel = c_cancel.form_submit_button("Cancel")
@@ -163,6 +255,7 @@ else:
                         description=new_desc,
                         price=float(new_price),
                         condition=new_cond,
+                        category=new_cat,
                     )
                     st.session_state.pop(f"editing_{l.id}", None)
                     st.success("Listing updated.")
