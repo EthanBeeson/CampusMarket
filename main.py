@@ -292,12 +292,15 @@ else:
                 if st.button("Open Profile", key=f"open_page_{getattr(l,'user_id','unknown')}_{l.id}"):
                     try:
                         st.set_query_params(user_id=str(owner.id))
+                        print("Try set query params succeeded, owner id:", owner.id) # TEST DELETE LATER
                     except Exception:
                         # fallback to older API name
                         try:
                             st.set_query_params(user_id=owner.id)
+                            print("First try failed, used fallback query params succeeded, owner id:", owner.id) # TEST DELETE LATER
                         except Exception:
-                            pass
+                            print("Try set query params Failed, owner id:", owner.id) # TEST DELETE LATER
+                            #pass
                     st.switch_page("pages/5_Public_Profile.py")
 
             # Small toggle to inline-expand the profile preview
