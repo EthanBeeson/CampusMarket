@@ -277,12 +277,8 @@ else:
         owner_parts.append(f'<div class="owner-info"><div class="owner-name">{owner_display_name}</div><div class="owner-rating">{rating_text}</div></div>')
         owner_parts.append('</div>')
 
-        # Render owner block with a View/Hide toggle
-        toggle_key = f"show_public_profile_{getattr(l,'user_id','unknown')}_{l.id}"
-        is_shown = st.session_state.get(toggle_key, False)
-        btn_label = "Hide" if is_shown else "View"
-
-        col_left, col_right = st.columns([0.66, 0.34])
+        # Render owner block with "Open Profile" button
+        col_left, col_right = st.columns([0.70, 0.30])
         with col_left:
             # Render owner HTML block (avatar + name + rating)
             st.markdown("".join(owner_parts), unsafe_allow_html=True)
@@ -290,63 +286,16 @@ else:
             # Button to open the dedicated public profile page (same-tab)
             if owner_exists:
                 if st.button("Open Profile", key=f"open_page_{getattr(l,'user_id','unknown')}_{l.id}"):
+                    st.session_state['public_profile_user_id'] = owner.id
                     try:
-                        st.set_query_params(user_id=str(owner.id))
-                        print("Try set query params succeeded, owner id:", owner.id) # TEST DELETE LATER
+                        st.query_params["user_id"] = str(owner.id)
                     except Exception:
                         # fallback to older API name
                         try:
-                            st.set_query_params(user_id=owner.id)
-                            print("First try failed, used fallback query params succeeded, owner id:", owner.id) # TEST DELETE LATER
+                            st.experimental_set_query_params(user_id=str(owner.id))
                         except Exception:
-                            print("Try set query params Failed, owner id:", owner.id) # TEST DELETE LATER
-                            #pass
+                            pass
                     st.switch_page("pages/5_Public_Profile.py")
-
-            # Small toggle to inline-expand the profile preview
-            if st.button(btn_label, key=f"open_profile_{getattr(l,'user_id','unknown')}_{l.id}"):
-                st.session_state[toggle_key] = not is_shown
-                st.rerun()
-
-        # If toggled, render inline expanded public profile
-        if st.session_state.get(toggle_key, False):
-            try:
-                st.markdown('<div style="background: rgba(255,255,255,0.03); padding:12px; border-radius:8px; margin-top:8px;">', unsafe_allow_html=True)
-                cA, cB = st.columns([0.18, 0.82])
-                with cA:
-                    if profile_pic_path:
-                        try:
-                            st.image(profile_pic_path, width=96)
-                        except Exception:
-                            st.markdown(f'<div class="owner-avatar-placeholder" style="width:96px;height:96px;font-size:32px;">{owner_display_name[0].upper()}</div>', unsafe_allow_html=True)
-                    else:
-                        st.markdown(f'<div class="owner-avatar-placeholder" style="width:96px;height:96px;font-size:32px;">{owner_display_name[0].upper()}</div>', unsafe_allow_html=True)
-                with cB:
-                    st.markdown(f"<div style='color:white; font-size:1.1em; font-weight:700;'>{owner_display_name}</div>", unsafe_allow_html=True)
-                    st.markdown(f"<div style='color:rgba(255,255,255,0.85); margin-bottom:8px;'>{rating_text}</div>", unsafe_allow_html=True)
-                    if owner_exists and getattr(owner, 'bio', None):
-                        st.markdown(f"<div style='color:rgba(255,255,255,0.9); margin-bottom:8px;'>{owner.bio}</div>", unsafe_allow_html=True)
-
-                    if owner_exists:
-                        owner_listings = db.query(Listing).filter(Listing.user_id == owner.id).all()
-                        if owner_listings:
-                            st.markdown("**Listings:**")
-                            for ol in owner_listings[:5]:
-                                st.markdown(f"- {ol.title} — ${float(ol.price):.2f}")
-
-                        reviews = get_reviews_for_user(db, owner.id)
-                        if reviews:
-                            st.markdown("**Recent Reviews:**")
-                            for r in reviews[:3]:
-                                reviewer_name = r.reviewer.display_name or r.reviewer.full_name or f"User {r.reviewer_id}"
-                                comment = (r.comment[:120] + '...') if r.comment and len(r.comment) > 120 else (r.comment or '')
-                                st.markdown(f"- **{reviewer_name}** — {r.rating}/5 — {comment}")
-                    else:
-                        st.markdown("User record not found.")
-
-                st.markdown('</div>', unsafe_allow_html=True)
-            except Exception:
-                st.info("Could not load public profile details.")
 
         # Title centered
         st.markdown(

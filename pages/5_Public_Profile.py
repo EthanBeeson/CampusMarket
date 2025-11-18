@@ -91,10 +91,20 @@ query_params = st.query_params
 raw_user_id = query_params.get("user_id")
 
 # Handle Streamlit returning list values for query params
+try:
+    query_params = st.query_params
+    raw_user_id = query_params.get("user_id")
+except Exception:
+    raw_user_id = None
+
 if isinstance(raw_user_id, list):
     user_id_val = raw_user_id[0] if raw_user_id else None
 else:
     user_id_val = raw_user_id
+
+# Fallback to session state if not in query params
+if not user_id_val:
+    user_id_val = st.session_state.get("public_profile_user_id")
 
 if not user_id_val:
     st.error("No user specified. Please view a user profile from a listing.")
