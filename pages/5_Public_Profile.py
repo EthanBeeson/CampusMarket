@@ -204,37 +204,25 @@ try:
     elif current_user_id == user.id:
         st.warning("You cannot review yourself.")
     else:
-        # Check if user has already reviewed
-        already_reviewed = has_user_reviewed(db, current_user_id, user.id)
-        
-        if already_reviewed:
-            existing_review = db.query(Review).filter(
-                Review.reviewer_id == current_user_id,
-                Review.reviewed_user_id == user.id
-            ).first()
-            st.info("You have already reviewed this user. You can update your review below.")
+        # Show create form (only check for existing review if form is submitted)
+        with st.form(key=f"create_review_{user.id}"):
+            rating = st.slider("Rating", 1.0, 5.0, value=3.0, step=0.5)
+            comment = st.text_area("Review Comment (optional)", height=100)
+            submit = st.form_submit_button("Submit Review")
             
-            # Show update form
-            with st.form(key=f"update_review_{user.id}"):
-                rating = st.slider("Rating", 1.0, 5.0, value=existing_review.rating, step=0.5)
-                comment = st.text_area("Review Comment", value=existing_review.comment or "", height=100)
-                submit = st.form_submit_button("Update Review")
+            if submit:
+                # Check if user has already reviewed after form submission
+                already_reviewed = has_user_reviewed(db, current_user_id, user.id)
                 
-                if submit:
-                    try:
-                        update_review(db, existing_review.id, rating=rating, comment=comment)
-                        st.success("Review updated successfully!")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Error updating review: {e}")
-        else:
-            # Show create form
-            with st.form(key=f"create_review_{user.id}"):
-                rating = st.slider("Rating", 1.0, 5.0, value=3.0, step=0.5)
-                comment = st.text_area("Review Comment (optional)", height=100)
-                submit = st.form_submit_button("Submit Review")
-                
-                if submit:
+                if already_reviewed:
+                    st.warning("You have already reviewed this user. Update your review instead.")
+                    # Show update form option
+                    existing_review = db.query(Review).filter(
+                        Review.reviewer_id == current_user_id,
+                        Review.reviewed_user_id == user.id
+                    ).first()
+                    st.info("You can update your review below.")
+                else:
                     if not rating:
                         st.error("Please select a rating.")
                     else:
@@ -252,6 +240,29 @@ try:
                             st.error(f"Error: {e}")
                         except Exception as e:
                             st.error(f"An error occurred: {e}")
+        
+        # Show update form if user has already reviewed
+        if has_user_reviewed(db, current_user_id, user.id):
+            existing_review = db.query(Review).filter(
+                Review.reviewer_id == current_user_id,
+                Review.reviewed_user_id == user.id
+            ).first()
+            st.divider()
+            st.subheader("Update Your Review")
+            
+            # Show update form
+            with st.form(key=f"update_review_{user.id}"):
+                rating = st.slider("Rating", 1.0, 5.0, value=existing_review.rating, step=0.5, key="update_rating")
+                comment = st.text_area("Review Comment", value=existing_review.comment or "", height=100, key="update_comment")
+                submit = st.form_submit_button("Update Review")
+                
+                if submit:
+                    try:
+                        update_review(db, existing_review.id, rating=rating, comment=comment)
+                        st.success("Review updated successfully!")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error updating review: {e}")
 
 finally:
     db.close()

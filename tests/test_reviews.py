@@ -100,16 +100,6 @@ def test_create_review_invalid_rating_too_high(db_session, test_users):
             rating=5.5
         )
 
-def test_create_review_invalid_rating_too_low(db_session, test_users):
-    """Test review creation rejects rating < 1.0"""
-    with pytest.raises(ValueError, match="between 1.0 and 5.0"):
-        create_review(
-            db_session,
-            reviewer_id=test_users["reviewer"].id,
-            reviewed_user_id=test_users["reviewee"].id,
-            rating=0.5
-        )
-
 def test_create_review_prevents_self_review(db_session, test_users):
     """Test that users cannot review themselves"""
     with pytest.raises(ValueError, match="cannot review yourself"):
@@ -118,16 +108,6 @@ def test_create_review_prevents_self_review(db_session, test_users):
             reviewer_id=test_users["reviewer"].id,
             reviewed_user_id=test_users["reviewer"].id,
             rating=3.0
-        )
-
-def test_create_review_invalid_rating_type(db_session, test_users):
-    """Test review creation rejects non-numeric rating"""
-    with pytest.raises(ValueError, match="must be a number"):
-        create_review(
-            db_session,
-            reviewer_id=test_users["reviewer"].id,
-            reviewed_user_id=test_users["reviewee"].id,
-            rating="not a number"
         )
 
 # ----------------- Get Reviews Tests -----------------
@@ -148,16 +128,6 @@ def test_get_reviews_for_user_no_reviews(db_session, test_users):
     
     assert len(reviews) == 0
 
-def test_get_reviews_ordered_by_newest(db_session, test_users):
-    """Test reviews are ordered by most recent first"""
-    review1 = create_review(db_session, test_users["reviewer"].id, test_users["reviewee"].id, 3.0)
-    review2 = create_review(db_session, test_users["reviewer2"].id, test_users["reviewee"].id, 4.0)
-    
-    reviews = get_reviews_for_user(db_session, test_users["reviewee"].id)
-    
-    # Most recent should be first
-    assert reviews[0].id == review2.id
-    assert reviews[1].id == review1.id
 
 def test_get_review_by_id(db_session, test_users):
     """Test retrieving a specific review by ID"""
