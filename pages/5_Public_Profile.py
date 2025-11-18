@@ -1,6 +1,7 @@
 # pages/5_Public_Profile.py
 import streamlit as st
 import os
+from PIL import Image as PILImage
 from app.db import SessionLocal
 from app.models.user import User
 from app.models.listing import Listing
@@ -18,69 +19,35 @@ st.markdown(
     """
     <style>
     .stApp { background-color: #005035; }
-    .profile-container {
-        background-color: #87B481;
-        padding: 20px;
+    .block-container { max-width: 900px; margin: 0 auto; }
+    .card {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 14px;
+        padding: 18px 20px;
+        margin: 18px 0 26px 0;
+    }
+    .card h2, .card h3, .card p { margin: 6px 0; }
+    .center { text-align: center; }
+    div.stButton > button {
         border-radius: 10px;
-        margin-bottom: 20px;
+        padding: 10px 14px;
+        font-weight: 600;
+        border: 1px solid rgba(255,255,255,0.15);
     }
-    .profile-header {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        margin-bottom: 20px;
-    }
-    .profile-pic {
-        width: 120px;
-        height: 120px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 4px solid white;
-    }
-    .profile-pic-placeholder {
-        width: 120px;
-        height: 120px;
-        border-radius: 50%;
-        background: #005035;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 48px;
-        font-weight: bold;
-        border: 4px solid white;
-    }
-    .profile-info h1 { margin: 0; color: #005035; }
-    .profile-info .rating { font-size: 1.1em; color: #2E7D32; }
-    .listings-container {
-        background-color: #87B481;
-        padding: 20px;
-        border-radius: 10px;
-        margin-bottom: 20px;
-    }
-    .reviews-container {
-        background-color: #87B481;
-        padding: 20px;
-        border-radius: 10px;
-    }
+    .profile-info h1 { margin: 0; color: white; }
+    .profile-info .rating { font-size: 1.1em; color: #87B481; }
     .review-card {
-        background-color: #E8F5E8;
+        background-color: rgba(135, 180, 129, 0.2);
         padding: 15px;
         border-radius: 8px;
         margin-bottom: 15px;
-        border-left: 4px solid #005035;
+        border-left: 4px solid #87B481;
     }
-    .review-header { font-weight: bold; color: #005035; margin-bottom: 5px; }
-    .review-rating { color: #FF9800; font-weight: bold; }
-    .review-comment { color: #333; margin-top: 5px; }
-    .review-date { font-size: 0.85em; color: #666; font-style: italic; }
-    .listing-card {
-        background-color: #E8F5E8;
-        padding: 15px;
-        border-radius: 8px;
-        margin-bottom: 15px;
-        border-left: 4px solid #005035;
-    }
+    .review-header { font-weight: bold; color: white; margin-bottom: 5px; }
+    .review-rating { color: #FFD700; font-weight: bold; }
+    .review-comment { color: rgba(255,255,255,0.9); margin-top: 5px; }
+    .review-date { font-size: 0.85em; color: rgba(255,255,255,0.6); font-style: italic; }
     </style>
     """,
     unsafe_allow_html=True
@@ -126,60 +93,20 @@ try:
         st.error("User not found.")
         st.stop()
 
-    # --- Header Section ---
-    st.markdown('<div class="profile-container">', unsafe_allow_html=True)
-    
-    st.markdown('<div class="profile-header">', unsafe_allow_html=True)
-    
-    # Profile picture: try multiple candidate paths (absolute, relative, uploads folder)
-    profile_pic_path = None
-    if user.profile_picture:
-        candidates = [
-            user.profile_picture,
-            os.path.join(os.getcwd(), user.profile_picture),
-            os.path.join(os.getcwd(), "uploads", "profile_pictures", user.profile_picture),
-        ]
-        for p in candidates:
-            try:
-                if p and os.path.exists(p):
-                    profile_pic_path = p
-                    break
-            except Exception:
-                continue
-
-    if profile_pic_path:
-        try:
-            st.image(profile_pic_path, width=120)
-        except Exception:
-            # fallback to placeholder
-            display_name = user.full_name or user.display_name or f"User {user.id}"
-            st.markdown(f'<div class="profile-pic-placeholder">{display_name[0].upper()}</div>', unsafe_allow_html=True)
-    else:
-        display_name = user.full_name or user.display_name or f"User {user.id}"
-        st.markdown(f'<div class="profile-pic-placeholder">{display_name[0].upper()}</div>', unsafe_allow_html=True)
-    
-    # Profile info - prefer full_name for clearer display
+    # --- Profile Header (simple, no card container) ---
     display_name = user.full_name or user.display_name or f"User {user.id}"
     avg_rating = get_user_average_rating(db, user.id)
     rating_text = f"⭐ {avg_rating:.1f}" if avg_rating else "No ratings yet"
     
-    st.markdown(f"""
-    <div class="profile-info">
-        <h1>{display_name}</h1>
-        <div class="rating">{rating_text}</div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.title(display_name)
+    st.markdown(f"**Rating:** {rating_text}")
     
-    st.markdown('</div>', unsafe_allow_html=True)  # end profile-header
-    
-    # Bio
     if user.bio:
         st.markdown(f"**Bio:** {user.bio}")
     
-    st.markdown('</div>', unsafe_allow_html=True)  # end profile-container
+    st.divider()
 
     # --- Listings Section ---
-    st.markdown('<div class="listings-container">', unsafe_allow_html=True)
     st.header("📋 Listings by this User")
     
     user_listings = db.query(Listing).filter(Listing.user_id == user.id).all()
@@ -188,20 +115,65 @@ try:
         st.write("This user has no listings.")
     else:
         st.write(f"**Total Listings:** {len(user_listings)}")
+        
         for listing in user_listings:
-            st.markdown(f"""
-            <div class="listing-card">
-                <strong>{listing.title}</strong><br>
-                Price: ${listing.price:.2f}<br>
-                Condition: {listing.category}<br>
-                Description: {listing.description}
-            </div>
-            """, unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            
+            # Title
+            st.markdown(
+                f"<h2 class='center'>{listing.title} - ${float(listing.price):.2f}</h2>",
+                unsafe_allow_html=True,
+            )
+            
+            # Meta
+            condition = getattr(listing, "condition", "Unknown")
+            st.markdown(f"<p class='center'><b>Condition:</b> {condition}</p>", unsafe_allow_html=True)
+            
+            if listing.description:
+                st.markdown(f"<p class='center'>{listing.description}</p>", unsafe_allow_html=True)
+            
+            # Image carousel
+            if listing.images:
+                key_idx = f"img_idx_{listing.id}"
+                if key_idx not in st.session_state:
+                    st.session_state[key_idx] = 0
+                
+                img_idx = st.session_state[key_idx]
+                total = len(listing.images)
+                try:
+                    img_path = listing.images[img_idx].url
+                    img = PILImage.open(img_path).convert("RGB")
+                except FileNotFoundError:
+                    img = None
+                    st.warning("[Image not found]")
+                except Exception as e:
+                    img = None
+                    st.error(f"Error displaying image: {e}")
+                
+                # center the image in a fixed middle column
+                L, M, R = st.columns([1, 2, 1])
+                with M:
+                    if img is not None:
+                        st.image(img, use_container_width=True)
+                    
+                    # SINGLE centered button to advance
+                    bL, bC, bR = st.columns([2, 1, 2])
+                    with bC:
+                        if st.button("->", key=f"next_{listing.id}", use_container_width=True):
+                            st.session_state[key_idx] = (img_idx + 1) % total
+                            st.rerun()
+                
+                st.markdown(
+                    f"<p class='center' style='color:rgba(255,255,255,0.6)'>Image {img_idx + 1} of {total}</p>",
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.markdown("<p class='center' style='opacity:.8'>No images available for this listing.</p>", unsafe_allow_html=True)
+            
+            st.markdown('</div>', unsafe_allow_html=True)  # end card
 
     # --- Reviews Section ---
-    st.markdown('<div class="reviews-container">', unsafe_allow_html=True)
+    st.divider()
     st.header("⭐ Reviews")
     
     reviews = get_reviews_for_user(db, user.id)
@@ -220,10 +192,9 @@ try:
             </div>
             """, unsafe_allow_html=True)
     
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.divider()
 
     # --- Leave a Review Section ---
-    st.markdown('<div class="reviews-container">', unsafe_allow_html=True)
     st.header("Leave a Review")
     
     current_user_id = st.session_state.get("user_id")
@@ -281,8 +252,6 @@ try:
                             st.error(f"Error: {e}")
                         except Exception as e:
                             st.error(f"An error occurred: {e}")
-    
-    st.markdown('</div>', unsafe_allow_html=True)
 
 finally:
     db.close()

@@ -22,82 +22,37 @@ st.markdown(
     .stApp {
         background-color: #005035;  /* dark green */
     }
+    .block-container { max-width: 900px; margin: 0 auto; }
+    .card {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 14px;
+        padding: 18px 20px;
+        margin: 18px 0 26px 0;
+    }
+    .card h2, .card h3, .card p { margin: 6px 0; }
+    .center { text-align: center; }
+    div.stButton > button {
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-weight: 600;
+        border: 1px solid rgba(255,255,255,0.15);
+    }
     .profile-container {
-        background-color: #87B481;  /* light green */
+        background-color: rgba(135, 180, 129, 0.15);
         padding: 20px;
         border-radius: 10px;
         margin-bottom: 20px;
-    }
-    .listings-container {
-        background-color: #87B481;  /* light green */
-        padding: 20px;
-        border-radius: 10px;
     }
     .stTextInput>div>div>input,
     .stTextArea>div>div>textarea {
         background-color: white;
         color: black;
     }
-    div.stButton > button {
-        background-color: #4CAF50;
-        color: white;
-    }
-    .listing-card {
-        background-color: #E8F5E8;  /* Light green background */
-        padding: 20px;
-        border-radius: 10px;
-        margin-bottom: 20px;
-        border-left: 6px solid #005035;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-    .listing-title {
-        color: #005035;  /* Dark green */
-        font-size: 1.4em;
-        font-weight: bold;
-        margin-bottom: 10px;
-    }
-    .listing-price {
-        color: #2E7D32;  /* Medium green */
-        font-size: 1.2em;
-        font-weight: bold;
-        margin-bottom: 8px;
-    }
-    .listing-description {
-        color: #333333;  /* Dark gray for readability */
-        margin-bottom: 8px;
-        line-height: 1.4;
-    }
     .listing-date {
-        color: #666666;  /* Medium gray */
+        color: rgba(255,255,255,0.6);
         font-size: 0.9em;
         font-style: italic;
-    }
-    .delete-btn {
-        background-color: #ff4444 !important;
-        color: white !important;
-        border: none;
-        border-radius: 5px;
-        padding: 8px 16px;
-        font-weight: bold;
-    }
-    .logout-btn {
-        background-color: #ff4444 !important;
-        color: white !important;
-    }
-    .no-listings {
-        text-align: center;
-        padding: 30px;
-        color: #005035;
-        font-size: 1.1em;
-    }
-    /* Profile header inline avatar - tweaked to match design */
-    .profile-inline { display: flex; align-items: center; gap: 8px; }
-    .profile-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; margin-right: 8px; }
-    .profile-title { font-size: 22px; font-weight: 700; margin: 0; }
-    /* Responsive tweak for small screens */
-    @media (max-width: 600px) {
-        .profile-avatar { width: 40px; height: 40px; }
-        .profile-title { font-size: 18px; }
     }
     </style>
     """,
@@ -208,38 +163,71 @@ def delete_listing_safe(listing_id, current_user_id):
         db.close()
 
 def display_listing_card(listing, images, current_user_id):
-    """Display a listing card with ownership-based delete button"""
-    st.markdown(f"""
-    <div class="listing-card">
-        <div class="listing-title">{listing.title}</div>
-        <div class="listing-price">${listing.price:.2f}</div>
-        <div class="listing-description">{listing.description}</div>
-        <div class="listing-date">Posted on {listing.created_at.strftime('%B %d, %Y at %I:%M %p')}</div>
-    </div>
-    """, unsafe_allow_html=True)
-        
-    # Display listing images
+    """Display a listing card with image carousel, date/time, and delete button"""
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    
+    # Title
+    st.markdown(
+        f"<h2 class='center'>{listing.title} - ${float(listing.price):.2f}</h2>",
+        unsafe_allow_html=True,
+    )
+    
+    # Condition
+    condition = getattr(listing, "condition", "Unknown")
+    st.markdown(f"<p class='center'><b>Condition:</b> {condition}</p>", unsafe_allow_html=True)
+    
+    # Description
+    if listing.description:
+        st.markdown(f"<p class='center'>{listing.description}</p>", unsafe_allow_html=True)
+    
+    # Date/Time (kept from original)
+    st.markdown(f"<p class='center listing-date'>Posted on {listing.created_at.strftime('%B %d, %Y at %I:%M %p')}</p>", unsafe_allow_html=True)
+    
+    # Image carousel
     if images:
-        st.write("**Images:**")
-        image_cols = st.columns(min(3, len(images)))
-        for idx, img in enumerate(images):
-            if idx < 3:  # Show max 3 images
-                with image_cols[idx]:
-                    if os.path.exists(img.url):
-                        #st.image(img.url, use_column_width=True, caption=f"Image {idx+1}")
-                        st.image(img.url, use_container_width=True, caption=f"Image {idx+1}")
-    
-    # Only show delete button if user owns the listing
-    if listing.user_id == current_user_id:
-        col1, col2 = st.columns([3, 1])
-        with col2:
-            if st.button("🗑️ Delete My Listing", key=f"delete_{listing.id}", use_container_width=True):
-                if delete_listing_safe(listing.id, current_user_id):
+        key_idx = f"img_idx_{listing.id}"
+        if key_idx not in st.session_state:
+            st.session_state[key_idx] = 0
+        
+        img_idx = st.session_state[key_idx]
+        total = len(images)
+        try:
+            img_path = images[img_idx].url
+            img = PILImage.open(img_path).convert("RGB")
+        except FileNotFoundError:
+            img = None
+            st.warning("[Image not found]")
+        except Exception as e:
+            img = None
+            st.error(f"Error displaying image: {e}")
+        
+        # center the image in a fixed middle column
+        L, M, R = st.columns([1, 2, 1])
+        with M:
+            if img is not None:
+                st.image(img, use_container_width=True)
+            
+            # SINGLE centered button to advance
+            bL, bC, bR = st.columns([2, 1, 2])
+            with bC:
+                if st.button("->", key=f"next_{listing.id}", use_container_width=True):
+                    st.session_state[key_idx] = (img_idx + 1) % total
                     st.rerun()
+        
+        st.markdown(
+            f"<p class='center' style='color:rgba(255,255,255,0.6)'>Image {img_idx + 1} of {total}</p>",
+            unsafe_allow_html=True,
+        )
     else:
-        st.warning("🔒 This listing belongs to another user")
+        st.markdown("<p class='center' style='opacity:.8'>No images available for this listing.</p>", unsafe_allow_html=True)
     
-    st.markdown("---")
+    # Delete button (only for owner)
+    if listing.user_id == current_user_id:
+        if st.button("🗑️ Delete My Listing", key=f"delete_{listing.id}", use_container_width=True):
+            if delete_listing_safe(listing.id, current_user_id):
+                st.rerun()
+    
+    st.markdown('</div>', unsafe_allow_html=True)  # end card
 
 # Main Profile Page
 st.set_page_config(page_title="Profile - Campus Market", layout="wide")
@@ -421,7 +409,7 @@ else:
 st.markdown('</div>', unsafe_allow_html=True)
 
 # --- Messages Section ---
-st.markdown('<div class="listings-container">', unsafe_allow_html=True)
+st.divider()
 st.header("💬 Messages Received")
 
 db = SessionLocal()
@@ -446,10 +434,10 @@ try:
             """, unsafe_allow_html=True)
 finally:
     db.close()
-st.markdown('</div>', unsafe_allow_html=True)
+
+st.divider()
 
 # User's Listings Section
-st.markdown('<div class="listings-container">', unsafe_allow_html=True)
 st.header("📋 Your Listings")
 
 db = SessionLocal()
@@ -464,7 +452,7 @@ try:
     else:
         st.write(f"**Total Listings:** {len(user_listings)}")
         
-        # Display each listing - pass current_user_id for authorization
+        # Display each listing with image carousel
         for listing in user_listings:
             listing_images = get_listing_images(db, listing.id)
             display_listing_card(listing, listing_images, user_id)
@@ -472,7 +460,7 @@ try:
 finally:
     db.close()
 
-st.markdown('</div>', unsafe_allow_html=True)
+st.divider()
 
 # Enhanced Quick Actions Section with Logout
 st.markdown("---")

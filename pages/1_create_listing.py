@@ -88,7 +88,7 @@ with st.form("create_listing_form", clear_on_submit=False):
     category = st.selectbox("Category", ALLOWED_CATEGORIES, index=ALLOWED_CATEGORIES.index("Other") if "Other" in ALLOWED_CATEGORIES else 0)
     price = st.number_input("Price (USD)", min_value=0.0, step=1.0, format="%.2f")
     #contact = st.text_input("Contact Information", placeholder="Email and/or Phone Number")
-    contact_email = st.text_input("Contact Email (optional)", placeholder="example@email.com")
+    contact_email = st.text_input("Contact Email", placeholder="example@email.com")
     contact_phone = st.text_input("Contact Phone (optional)", placeholder="e.g. 555-123-4567")
     images = st.file_uploader(
         "Upload Item Pictures",
