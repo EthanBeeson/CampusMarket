@@ -442,35 +442,23 @@ else:
         else:
             st.markdown("<p class='center' style='opacity:.8'>No images available for this listing.</p>", unsafe_allow_html=True)
 
+        
         # Message seller for non-owner
         if "user_id" in st.session_state and st.session_state["user_id"] != getattr(l, "user_id", None):
-            if st.button("💬 Contact Seller", key=f"contact_btn_{l.id}", help="Click to send a message", use_container_width=True):
-                st.session_state[f"show_msg_box_{l.id}"] = not st.session_state.get(f"show_msg_box_{l.id}", False)
 
-            if st.session_state.get(f"show_msg_box_{l.id}", False):
-                message_text = st.text_area(
-                    "Your Message",
-                    placeholder="Hi! I'm interested in your listing. Is it still available?",
-                    key=f"message_text_{l.id}"
-                )
-                if st.button("Send Message", key=f"send_message_{l.id}", use_container_width=True):
-                    if not message_text.strip():
-                        st.error("⚠️ Message cannot be empty.")
-                    else:
-                        db2 = SessionLocal()
-                        try:
-                            from app.crud.messages import send_message
-                            send_message(
-                                db=db2,
-                                sender_id=st.session_state["user_id"],
-                                receiver_id=l.user_id,
-                                listing_id=l.id,
-                                content=message_text,
-                            )
-                            st.success("✅ Message sent to seller!")
-                            st.session_state[f"show_msg_box_{l.id}"] = False
-                        finally:
-                            db2.close()
+            if st.button(
+                "💬 Contact Seller",
+                key=f"contact_btn_{l.id}",
+                help="Click to send a message",
+                use_container_width=True
+            ):
+
+                # Save info for Messages page
+                st.session_state["open_chat_with_user"] = l.user_id
+                st.session_state["open_chat_for_listing"] = l.id
+
+                # Redirect to Messages tab
+                st.switch_page("pages/6_Messages.py")
 
         st.markdown('</div>', unsafe_allow_html=True)  # end card
 
