@@ -1,4 +1,4 @@
-# pages/5_Public_Profile.py
+# pages/Public_Profile.py
 import streamlit as st
 import os
 from PIL import Image as PILImage
