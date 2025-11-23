@@ -41,6 +41,7 @@ st.markdown(
 st.title("🔑 Login")
 
 st.write("Please sign in with your Charlotte student email and password.")
+st.caption("Forgot your password? Use the reset link below to set a new one.")
 
 # Check if user is already authenticated
 if st.session_state.get("authenticated", False):
@@ -85,3 +86,8 @@ with st.form("login_form"):
                         
                 finally:
                     db.close()
+
+# Password reset navigation
+st.write("---")
+if st.button("Forgot your password? Reset it here"):
+    st.switch_page("pages/7_Reset_Password.py")

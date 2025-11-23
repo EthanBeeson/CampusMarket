@@ -6,7 +6,10 @@ from app.crud.users import (
     validate_charlotte_email, 
     validate_password, 
     authenticate_user,
-    create_user
+    create_user,
+    reset_password_by_email,
+    update_user_password,
+    verify_user_password,
 )
 from app.models.user import User
 from app.db import Base
@@ -152,6 +155,69 @@ def test_complete_user_flow(db_session):
     # 3. Login with wrong password fails
     is_authenticated, _ = authenticate_user(db_session, email, "WrongPass123!")
     assert is_authenticated == False
+
+# ----------------- Password Reset Tests -----------------
+def test_reset_password_success(db_session):
+    """Resetting password allows login with new credentials and rejects old."""
+    email = "reset@charlotte.edu"
+    original_pw = "Original123!"
+    new_pw = "NewPass123!"
+
+    user = create_user(db_session, email, original_pw)
+    assert user is not None
+
+    assert reset_password_by_email(db_session, email, new_pw) is True
+
+    is_authenticated, _ = authenticate_user(db_session, email, new_pw)
+    assert is_authenticated is True
+
+    is_authenticated_old, _ = authenticate_user(db_session, email, original_pw)
+    assert is_authenticated_old is False
+
+
+def test_reset_password_requires_charlotte_email(db_session):
+    """Reset should reject non-Charlotte addresses."""
+    with pytest.raises(ValueError, match="charlotte.edu"):
+        reset_password_by_email(db_session, "person@gmail.com", "ValidPass123!")
+
+
+def test_reset_password_missing_user(db_session):
+    """Reset should raise for unknown accounts."""
+    with pytest.raises(ValueError, match="No account"):
+        reset_password_by_email(db_session, "missing@charlotte.edu", "ValidPass123!")
+
+
+def test_reset_password_same_as_old(db_session):
+    """Reset should fail if the new password matches the current one."""
+    email = "samepw@charlotte.edu"
+    password = "Original123!"
+    create_user(db_session, email, password)
+
+    with pytest.raises(ValueError, match="different from the current password"):
+        reset_password_by_email(db_session, email, password)
+
+
+def test_update_user_password_success(db_session):
+    """Updating password directly should hash and replace the old one."""
+    email = "changepw@charlotte.edu"
+    original_pw = "Original123!"
+    new_pw = "Changed123!"
+    user = create_user(db_session, email, original_pw)
+
+    assert verify_user_password(db_session, user.id, original_pw) is True
+    assert update_user_password(db_session, user.id, new_pw) is True
+    assert verify_user_password(db_session, user.id, new_pw) is True
+    assert verify_user_password(db_session, user.id, original_pw) is False
+
+
+def test_update_user_password_rejects_same(db_session):
+    """Direct update should reject setting the same password."""
+    email = "samechange@charlotte.edu"
+    pw = "Original123!"
+    user = create_user(db_session, email, pw)
+
+    with pytest.raises(ValueError, match="different from the current password"):
+        update_user_password(db_session, user.id, pw)
 
 # Run tests
 if __name__ == "__main__":

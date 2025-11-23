@@ -102,11 +102,49 @@ def update_user_password(db: Session, user_id: int, new_password: str) -> bool:
         raise ValueError(error_message)
     
     user = db.query(User).filter(User.id == user_id).first()
-    if user:
-        user.hashed_password = hash_password(new_password)
-        db.commit()
-        return True
-    return False
+    if not user:
+        return False
+
+    new_hash = hash_password(new_password)
+    if user.hashed_password == new_hash:
+        raise ValueError("New password must be different from the current password.")
+
+    user.hashed_password = new_hash
+    db.commit()
+    db.refresh(user)
+    return True
+
+
+def verify_user_password(db: Session, user_id: int, password: str) -> bool:
+    """Return True if the supplied password matches the stored hash for the user."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return False
+    return user.hashed_password == hash_password(password)
+
+
+def reset_password_by_email(db: Session, email: str, new_password: str) -> bool:
+    """
+    Reset a user's password using their email address.
+
+    Raises ValueError for validation or missing user. Returns True on success.
+    """
+    # Validate email domain/format
+    is_valid_email, email_error = validate_charlotte_email(email)
+    if not is_valid_email:
+        raise ValueError(email_error)
+
+    user = get_user_by_email(db, email)
+    if not user:
+        raise ValueError("No account found with that email.")
+
+    # Ensure new password differs from current one
+    new_hash = hash_password(new_password)
+    if user.hashed_password == new_hash:
+        raise ValueError("New password must be different from the current password.")
+
+    # Reuse existing update logic (includes password validation)
+    return update_user_password(db, user.id, new_password)
 
 
 def update_user_profile(db: Session, user_id: int, full_name: str = None, display_name: str = None,

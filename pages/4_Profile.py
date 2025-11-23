@@ -12,7 +12,12 @@ from sqlalchemy import select
 from app.models.listing import Listing
 from app.models.image import Image
 from app.models.user import User
-from app.crud.users import update_user_profile, delete_user_profile_picture
+from app.crud.users import (
+    update_user_profile,
+    delete_user_profile_picture,
+    update_user_password,
+    verify_user_password,
+)
 from app.models.message import Message
 
 # Charlotte colors styling
@@ -407,6 +412,36 @@ else:
 
 
 st.markdown('</div>', unsafe_allow_html=True)
+
+# Change Password Section (requires current password)
+st.subheader("Change Password")
+st.caption("For security, you must enter your current password.")
+with st.form("change_password_form"):
+    current_pw = st.text_input("Current Password", type="password")
+    new_pw = st.text_input("New Password", type="password")
+    confirm_pw = st.text_input("Confirm New Password", type="password")
+    change_pw = st.form_submit_button("Update Password")
+
+    if change_pw:
+        if not current_pw:
+            st.error("Please enter your current password.")
+        elif not new_pw or not confirm_pw:
+            st.error("Please enter and confirm your new password.")
+        elif new_pw != confirm_pw:
+            st.error("New passwords do not match.")
+        else:
+            db = SessionLocal()
+            try:
+                if not verify_user_password(db, user_id, current_pw):
+                    st.error("Current password is incorrect.")
+                else:
+                    try:
+                        update_user_password(db, user_id, new_pw)
+                        st.success("Password updated successfully.")
+                    except ValueError as e:
+                        st.error(str(e))
+            finally:
+                db.close()
 
 # --- Messages Section ---
 st.divider()

@@ -16,9 +16,55 @@ ALLOWED_CATEGORIES = ["Books", "Electronics", "Furniture", "Clothing", "Hobby", 
 #=========================================#
 
 # Create a listing
-def create_listing(db: Session, title: str, description: str, price: float, image_urls: list, user_id: int, condition: str = "Good", contact_email: str = None,
+def create_listing(db: Session, title, description=None, price: float = None, image_urls: list | None = None,
+                   user_id: int | None = None, condition: str = "Good", contact_email: str = None,
                    contact_phone: str = None, category: str = "Other"):
-    """Create a listing and persist images, user and condition."""
+    """
+    Create a listing and persist images, user and condition.
+
+    Supports two call styles:
+    - Keyword/standard: create_listing(db, title="T", description="D", price=1.0, image_urls=[], user_id=1, ...)
+    - Legacy positional: create_listing(db, user_id, title, description, price, condition, category)
+    """
+    # Default images list
+    if image_urls is None:
+        image_urls = []
+
+    # Detect legacy positional ordering where user_id is the second arg and condition/category shifted
+    if isinstance(title, int) and isinstance(user_id, str) and user_id in ALLOWED_CONDITIONS:
+        legacy_user_id = title
+        legacy_title = description
+        legacy_description = price
+        legacy_price = image_urls
+        legacy_condition = user_id
+        legacy_category = condition if isinstance(condition, str) else "Other"
+
+        # Remap into expected fields
+        title = legacy_title
+        description = legacy_description
+        try:
+            price = float(legacy_price)
+        except (TypeError, ValueError):
+            raise ValueError("Price must be a number")
+        user_id = legacy_user_id
+        condition = legacy_condition
+        category = legacy_category
+        image_urls = []
+
+    # Validate presence of required fields
+    if user_id is None:
+        raise ValueError("user_id is required")
+    if title is None or description is None or price is None:
+        raise ValueError("title, description, and price are required")
+
+    # Validate and normalize price
+    try:
+        price_val = float(price)
+    except (TypeError, ValueError):
+        raise ValueError("Price must be a number")
+    if price_val < 0:
+        raise ValueError("Price cannot be negative")
+
     # Validate condition
     if condition is None:
         condition = "Good"
@@ -28,7 +74,6 @@ def create_listing(db: Session, title: str, description: str, price: float, imag
     if condition_clean not in ALLOWED_CONDITIONS:
         raise ValueError(f"Invalid condition '{condition}'. Allowed: {ALLOWED_CONDITIONS}")
 
-    listing = Listing(title=title, description=description, price=price, user_id=user_id, condition=condition_clean)
     # Validate and set category
     if category is None:
         category = "Other"
@@ -37,15 +82,21 @@ def create_listing(db: Session, title: str, description: str, price: float, imag
     category_clean = category.strip()
     if category_clean not in ALLOWED_CATEGORIES:
         raise ValueError(f"Invalid category '{category}'. Allowed: {ALLOWED_CATEGORIES}")
-    listing.category = category_clean
-    
+
+    listing = Listing(
+        title=title,
+        description=description,
+        price=price_val,
+        user_id=user_id,
+        condition=condition_clean,
+        category=category_clean,
+        contact_email=contact_email,
+        contact_phone=contact_phone,
+    )
+
     # Attach images
     images = [Image(url=url) for url in image_urls]
-    # Connects all images to the listing by the SQLAlchemy listing.images list
     listing.images.extend(images)
-
-    if price < 0:
-        raise ValueError("Price cannot be negative")
     
     db.add(listing)
     db.commit()

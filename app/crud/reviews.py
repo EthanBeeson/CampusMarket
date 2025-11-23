@@ -7,10 +7,10 @@ from sqlalchemy import func as sqlfunc
 def create_review(db: Session, reviewer_id: int, reviewed_user_id: int, rating: float, 
                   comment: str = None, listing_id: int = None):
     """Create a review for a user."""
-    if rating < 1.0 or rating > 5.0:
-        raise ValueError("Rating must be between 1.0 and 5.0")
     if not isinstance(rating, (int, float)):
         raise ValueError("Rating must be a number")
+    if rating < 1.0 or rating > 5.0:
+        raise ValueError("Rating must be between 1.0 and 5.0")
     if reviewer_id == reviewed_user_id:
         raise ValueError("You cannot review yourself")
     
@@ -29,7 +29,12 @@ def create_review(db: Session, reviewer_id: int, reviewed_user_id: int, rating: 
 # Get all reviews for a user (reviews received)
 def get_reviews_for_user(db: Session, user_id: int):
     """Get all reviews received by a user, ordered by most recent."""
-    return db.query(Review).filter(Review.reviewed_user_id == user_id).order_by(Review.created_at.desc()).all()
+    return (
+        db.query(Review)
+        .filter(Review.reviewed_user_id == user_id)
+        .order_by(Review.created_at.desc(), Review.id.desc())
+        .all()
+    )
 
 # Get average rating for a user
 def get_user_average_rating(db: Session, user_id: int):
@@ -69,6 +74,8 @@ def update_review(db: Session, review_id: int, rating: float = None, comment: st
         return None
     
     if rating is not None:
+        if not isinstance(rating, (int, float)):
+            raise ValueError("Rating must be a number")
         if rating < 1.0 or rating > 5.0:
             raise ValueError("Rating must be between 1.0 and 5.0")
         review.rating = rating
