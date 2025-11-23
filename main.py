@@ -462,7 +462,7 @@ else:
                 st.session_state["open_chat_for_listing"] = l.id
 
                 # Redirect to Messages tab
-                st.switch_page("pages/6_Messages.py")
+                st.switch_page("pages/5_Messages.py")
 
         st.markdown('</div>', unsafe_allow_html=True)  # end card
 
