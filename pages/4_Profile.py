@@ -5,6 +5,8 @@ import re
 from PIL import Image as PILImage
 import io
 import base64
+import json
+from datetime import datetime
 
 # SQLAlchemy imports
 from app.db import SessionLocal
@@ -162,6 +164,25 @@ def delete_listing_safe(listing_id, current_user_id):
     finally:
         db.close()
 
+
+def save_report(listing_id, reporter_id, reason: str = ""):
+    """Save a simple JSON-lines report to the `reports/` folder.
+
+    This avoids DB schema changes for now and produces a traceable record:
+    `reports/reports.jsonl` where each line is a JSON object.
+    """
+    os.makedirs("reports", exist_ok=True)
+    report = {
+        "listing_id": int(listing_id),
+        "reporter_id": int(reporter_id) if reporter_id is not None else None,
+        "reason": reason or "",
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+    }
+    out_path = os.path.join("reports", "reports.jsonl")
+    with open(out_path, "a", encoding="utf-8") as fh:
+        fh.write(json.dumps(report, ensure_ascii=False) + "\n")
+    return out_path
+
 def display_listing_card(listing, images, current_user_id):
     """Display a listing card with image carousel, date/time, and delete button"""
     st.markdown('<div class="card">', unsafe_allow_html=True)
@@ -226,6 +247,28 @@ def display_listing_card(listing, images, current_user_id):
         if st.button("🗑️ Delete My Listing", key=f"delete_{listing.id}", use_container_width=True):
             if delete_listing_safe(listing.id, current_user_id):
                 st.rerun()
+
+    # Report flow (visible to users who are not the owner)
+    if listing.user_id != current_user_id:
+        # Open the inline report form when user clicks Report
+        if st.button("🚩 Report Listing", key=f"report_{listing.id}", use_container_width=True):
+            st.session_state[f"report_open_{listing.id}"] = True
+
+        if st.session_state.get(f"report_open_{listing.id}", False):
+            reason = st.text_area("Why are you reporting this listing? (optional)", key=f"report_reason_{listing.id}", height=80)
+            c1, c2 = st.columns([1, 1])
+            with c1:
+                if st.button("Submit Report", key=f"report_submit_{listing.id}"):
+                    try:
+                        save_report(listing.id, current_user_id, reason)
+                        st.success("Thanks — the listing has been reported.")
+                        # close the form
+                        st.session_state.pop(f"report_open_{listing.id}", None)
+                    except Exception as e:
+                        st.error(f"Error saving report: {e}")
+            with c2:
+                if st.button("Cancel", key=f"report_cancel_{listing.id}"):
+                    st.session_state.pop(f"report_open_{listing.id}", None)
     
     st.markdown('</div>', unsafe_allow_html=True)  # end card
 

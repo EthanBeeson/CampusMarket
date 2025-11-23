@@ -36,7 +36,7 @@ pip install -r requirements.txt
 python main.py
 
 # First time only:
-# From the root of the project CampusMarket create a fake listing by running:
+# From the root of the sproject CampusMarket create a fake listing by running:
 python -m scripts.seed_db
 
 # For testing streamlit frontend

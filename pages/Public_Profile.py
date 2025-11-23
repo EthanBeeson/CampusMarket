@@ -12,6 +12,8 @@ from app.crud.reviews import (
     has_user_reviewed, update_review, delete_review
 )
 from sqlalchemy import select
+import json
+from datetime import datetime
 
 st.set_page_config(page_title="Public Profile - Campus Market", layout="wide")
 
@@ -106,6 +108,9 @@ try:
     
     st.divider()
 
+    # current viewer
+    current_user_id = st.session_state.get("user_id")
+
     # --- Listings Section ---
     st.header("📋 Listings by this User")
     
@@ -169,6 +174,35 @@ try:
                 )
             else:
                 st.markdown("<p class='center' style='opacity:.8'>No images available for this listing.</p>", unsafe_allow_html=True)
+
+            # Report flow for public listings
+            if listing.user_id != current_user_id:
+                if st.button("🚩 Report Listing", key=f"pub_report_{listing.id}", use_container_width=True):
+                    st.session_state[f"pub_report_open_{listing.id}"] = True
+
+                if st.session_state.get(f"pub_report_open_{listing.id}", False):
+                    reason = st.text_area("Why are you reporting this listing? (optional)", key=f"pub_report_reason_{listing.id}", height=80)
+                    c1, c2 = st.columns([1, 1])
+                    with c1:
+                        if st.button("Submit Report", key=f"pub_report_submit_{listing.id}"):
+                            try:
+                                # persist to reports JSONL
+                                os.makedirs("reports", exist_ok=True)
+                                report = {
+                                    "listing_id": int(listing.id),
+                                    "reporter_id": int(current_user_id) if current_user_id is not None else None,
+                                    "reason": reason or "",
+                                    "timestamp": datetime.utcnow().isoformat() + "Z",
+                                }
+                                with open(os.path.join("reports", "reports.jsonl"), "a", encoding="utf-8") as fh:
+                                    fh.write(json.dumps(report, ensure_ascii=False) + "\n")
+                                st.success("Thanks — the listing has been reported.")
+                                st.session_state.pop(f"pub_report_open_{listing.id}", None)
+                            except Exception as e:
+                                st.error(f"Error saving report: {e}")
+                    with c2:
+                        if st.button("Cancel", key=f"pub_report_cancel_{listing.id}"):
+                            st.session_state.pop(f"pub_report_open_{listing.id}", None)
             
             st.markdown('</div>', unsafe_allow_html=True)  # end card
 
