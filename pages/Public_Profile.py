@@ -1,4 +1,4 @@
-# pages/5_Public_Profile.py
+# pages/Public_Profile.py
 import streamlit as st
 import os
 from PIL import Image as PILImage
@@ -12,6 +12,8 @@ from app.crud.reviews import (
     has_user_reviewed, update_review, delete_review
 )
 from sqlalchemy import select
+import json
+from datetime import datetime
 
 st.set_page_config(page_title="Public Profile - Campus Market", layout="wide")
 
@@ -106,6 +108,9 @@ try:
     
     st.divider()
 
+    # current viewer
+    current_user_id = st.session_state.get("user_id")
+
     # --- Listings Section ---
     st.header("📋 Listings by this User")
     
@@ -169,6 +174,35 @@ try:
                 )
             else:
                 st.markdown("<p class='center' style='opacity:.8'>No images available for this listing.</p>", unsafe_allow_html=True)
+
+            # Report flow for public listings
+            if listing.user_id != current_user_id:
+                if st.button("🚩 Report Listing", key=f"pub_report_{listing.id}", use_container_width=True):
+                    st.session_state[f"pub_report_open_{listing.id}"] = True
+
+                if st.session_state.get(f"pub_report_open_{listing.id}", False):
+                    reason = st.text_area("Why are you reporting this listing? (optional)", key=f"pub_report_reason_{listing.id}", height=80)
+                    c1, c2 = st.columns([1, 1])
+                    with c1:
+                        if st.button("Submit Report", key=f"pub_report_submit_{listing.id}"):
+                            try:
+                                # persist to reports JSONL
+                                os.makedirs("reports", exist_ok=True)
+                                report = {
+                                    "listing_id": int(listing.id),
+                                    "reporter_id": int(current_user_id) if current_user_id is not None else None,
+                                    "reason": reason or "",
+                                    "timestamp": datetime.utcnow().isoformat() + "Z",
+                                }
+                                with open(os.path.join("reports", "reports.jsonl"), "a", encoding="utf-8") as fh:
+                                    fh.write(json.dumps(report, ensure_ascii=False) + "\n")
+                                st.success("Thanks — the listing has been reported.")
+                                st.session_state.pop(f"pub_report_open_{listing.id}", None)
+                            except Exception as e:
+                                st.error(f"Error saving report: {e}")
+                    with c2:
+                        if st.button("Cancel", key=f"pub_report_cancel_{listing.id}"):
+                            st.session_state.pop(f"pub_report_open_{listing.id}", None)
             
             st.markdown('</div>', unsafe_allow_html=True)  # end card
 
@@ -204,37 +238,25 @@ try:
     elif current_user_id == user.id:
         st.warning("You cannot review yourself.")
     else:
-        # Check if user has already reviewed
-        already_reviewed = has_user_reviewed(db, current_user_id, user.id)
-        
-        if already_reviewed:
-            existing_review = db.query(Review).filter(
-                Review.reviewer_id == current_user_id,
-                Review.reviewed_user_id == user.id
-            ).first()
-            st.info("You have already reviewed this user. You can update your review below.")
+        # Show create form (only check for existing review if form is submitted)
+        with st.form(key=f"create_review_{user.id}"):
+            rating = st.slider("Rating", 1.0, 5.0, value=3.0, step=0.5)
+            comment = st.text_area("Review Comment (optional)", height=100)
+            submit = st.form_submit_button("Submit Review")
             
-            # Show update form
-            with st.form(key=f"update_review_{user.id}"):
-                rating = st.slider("Rating", 1.0, 5.0, value=existing_review.rating, step=0.5)
-                comment = st.text_area("Review Comment", value=existing_review.comment or "", height=100)
-                submit = st.form_submit_button("Update Review")
+            if submit:
+                # Check if user has already reviewed after form submission
+                already_reviewed = has_user_reviewed(db, current_user_id, user.id)
                 
-                if submit:
-                    try:
-                        update_review(db, existing_review.id, rating=rating, comment=comment)
-                        st.success("Review updated successfully!")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Error updating review: {e}")
-        else:
-            # Show create form
-            with st.form(key=f"create_review_{user.id}"):
-                rating = st.slider("Rating", 1.0, 5.0, value=3.0, step=0.5)
-                comment = st.text_area("Review Comment (optional)", height=100)
-                submit = st.form_submit_button("Submit Review")
-                
-                if submit:
+                if already_reviewed:
+                    st.warning("You have already reviewed this user. Update your review instead.")
+                    # Show update form option
+                    existing_review = db.query(Review).filter(
+                        Review.reviewer_id == current_user_id,
+                        Review.reviewed_user_id == user.id
+                    ).first()
+                    st.info("You can update your review below.")
+                else:
                     if not rating:
                         st.error("Please select a rating.")
                     else:
@@ -252,6 +274,29 @@ try:
                             st.error(f"Error: {e}")
                         except Exception as e:
                             st.error(f"An error occurred: {e}")
+        
+        # Show update form if user has already reviewed
+        if has_user_reviewed(db, current_user_id, user.id):
+            existing_review = db.query(Review).filter(
+                Review.reviewer_id == current_user_id,
+                Review.reviewed_user_id == user.id
+            ).first()
+            st.divider()
+            st.subheader("Update Your Review")
+            
+            # Show update form
+            with st.form(key=f"update_review_{user.id}"):
+                rating = st.slider("Rating", 1.0, 5.0, value=existing_review.rating, step=0.5, key="update_rating")
+                comment = st.text_area("Review Comment", value=existing_review.comment or "", height=100, key="update_comment")
+                submit = st.form_submit_button("Update Review")
+                
+                if submit:
+                    try:
+                        update_review(db, existing_review.id, rating=rating, comment=comment)
+                        st.success("Review updated successfully!")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error updating review: {e}")
 
 finally:
     db.close()

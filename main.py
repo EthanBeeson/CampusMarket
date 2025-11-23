@@ -295,7 +295,8 @@ else:
                             st.experimental_set_query_params(user_id=str(owner.id))
                         except Exception:
                             pass
-                    st.switch_page("pages/5_Public_Profile.py")
+                    st.switch_page("pages/Public_Profile.py")
+
 
         # Title centered
         st.markdown(

@@ -142,7 +142,9 @@ with st.form("create_listing_form", clear_on_submit=False):
                 )
                 st.success(f"Listing created: {item.title}")
                 if saved_paths:
-                    #st.image(saved_paths, caption="Uploaded Images", use_column_width=True)
-                    st.image(saved_paths, caption="Uploaded Images", use_container_width=True)
+                    # Display images in centered carousel style matching main page
+                    L, M, R = st.columns([1, 2, 1])
+                    with M:
+                        st.image(saved_paths, use_container_width=True)
             finally:
                 db.close()

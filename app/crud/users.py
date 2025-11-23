@@ -61,10 +61,12 @@ def create_user(db: Session, email: str, password: str) -> User:
     if existing_user:
         raise ValueError("An account with this email already exists.")
     
-    # Create user
+    # Create user; default display_name to local-part of email
+    local_part = email.split("@")[0] if "@" in email else email
     user = User(
         email=email.lower().strip(),
-        hashed_password=hash_password(password)
+        hashed_password=hash_password(password),
+        display_name=local_part
     )
     
     db.add(user)
