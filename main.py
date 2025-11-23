@@ -446,6 +446,9 @@ else:
         
         # Message seller for non-owner
         if "user_id" in st.session_state and st.session_state["user_id"] != getattr(l, "user_id", None):
+            
+            contact_key = f"contact_btn_{l.id}"
+
 
             if st.button(
                 "💬 Contact Seller",
