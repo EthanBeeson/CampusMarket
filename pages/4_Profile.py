@@ -486,32 +486,6 @@ with st.form("change_password_form"):
             finally:
                 db.close()
 
-# --- Messages Section ---
-st.divider()
-st.header("💬 Messages Received")
-
-db = SessionLocal()
-try:
-    messages = get_received_messages(db, user_id)
-    if not messages:
-        st.info("You have no messages yet.")
-    else:
-        for msg in messages:
-            listing = db.query(Listing).filter(Listing.id == msg.listing_id).first()
-            listing_title = listing.title if listing else "Listing Deleted"
-
-            sender_name = getattr(msg.sender, "display_name", f"User {msg.sender_id}")
-            
-            st.markdown(f"""
-            <div class="message-card">
-                <b>From:</b> User {msg.sender_id} <br>
-                <b>Regarding:</b> {listing_title} <br>
-                <b>Message:</b> {msg.content} <br>
-                <i>Sent on {msg.created_at.strftime('%b %d, %Y %I:%M %p')}</i>
-            </div>
-            """, unsafe_allow_html=True)
-finally:
-    db.close()
 
 st.divider()
 
