@@ -133,7 +133,7 @@ st.markdown(
 )
 
 
-st.title("🔑 Login")
+st.title("Login")
 st.write("Please sign in with your Charlotte student email and password.")
 st.caption("Forgot your password? Use the reset link below to set a new one.")
 
