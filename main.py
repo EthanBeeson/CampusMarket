@@ -16,6 +16,7 @@ from app.crud.reviews import get_reviews_for_user, get_user_average_rating
 
 st.set_page_config(page_title="Campus Market", layout="wide")
 
+
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
@@ -34,49 +35,66 @@ with engine.begin() as conn:
 st.markdown(
     """
     <style>
-      .stApp { background-color: #005035; }
+      /* CHANGED: White background instead of green */
+      .stApp { background-color: #ffffff; }
+      
       /* center column width */
       .block-container { max-width: 900px; margin: 0 auto; }
-      /* listing card */
+      
+      /* UPDATED: Listing card with white background and green border */
       .card {
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.06);
+        background: #ffffff;
+        border: 2px solid #005035;  /* CHANGED: Charlotte green border */
         border-radius: 14px;
         padding: 18px 20px;
         margin: 18px 0 26px 0;
+        box-shadow: 0 4px 12px rgba(0, 80, 53, 0.1);  /* ADDED: Subtle shadow */
       }
+      
       /* center headings inside cards without changing global titles */
       .card h2, .card h3, .card p { margin: 6px 0; }
       .center { text-align: center; }
-      /* nicer buttons */
+      
+      /* UPDATED: Nicer buttons with Charlotte green */
       div.stButton > button {
         border-radius: 10px;
         padding: 10px 14px;
         font-weight: 600;
-        border: 1px solid rgba(255,255,255,0.15);
+        border: 2px solid #005035;  /* CHANGED: Green border */
+        background-color: #005035;   /* CHANGED: Green background */
+        color: white;                /* CHANGED: White text */
       }
-            /* Focused / active multiselect/select wrappers */
-            [data-testid="stSidebar"] .stMultiSelect div[data-baseweb="select"][data-focus="true"] > div,
-            .block-container .stMultiSelect div[data-baseweb="select"][data-focus="true"] > div,
+      
+      /* UPDATED: Hover effect for buttons */
+      div.stButton > button:hover {
+        background-color: #003d28;   /* CHANGED: Darker green on hover */
+        border-color: #003d28;
+      }
+      
+      /* Focused / active multiselect/select wrappers */
+      [data-testid="stSidebar"] .stMultiSelect div[data-baseweb="select"][data-focus="true"] > div,
+      .block-container .stMultiSelect div[data-baseweb="select"][data-focus="true"] > div,
+      
       /* compact vertical spacing between stacked widgets */
       .element-container:has(> div.stButton) { margin: 0.2rem 0; }
+      
       /* carousel nav buttons */
       .navbtn > button { width: 100%; }
 
-      /*  Make Category Buttons Colored Charlotte Green */
+      /* UPDATED: Category buttons with Charlotte green */
       .stSidebar [data-baseweb="tag"] {
           background-color: #005035 !important;   /* Charlotte green */
           color: white !important;
        }
 
-    /* Remove border color entirely from select widgets (multiselect/selectbox/combobox)*/
-    section[data-testid="stSidebar"] div[data-baseweb="select"] > div,
-    .block-container div[data-baseweb="select"] > div,
-    div[data-baseweb="select"] > div,
-    div[data-baseweb="select"][data-focus="true"] > div,
-    div[data-baseweb="select"][aria-expanded="true"] > div,
-    div[data-baseweb="select"]:focus-within > div,
-    .stSelectbox > div {
+    /* Remove border color entirely from select widgets — scoped to main page */
+    .main-page section[data-testid="stSidebar"] div[data-baseweb="select"] > div,
+    .main-page .block-container div[data-baseweb="select"] > div,
+    .main-page div[data-baseweb="select"] > div,
+    .main-page div[data-baseweb="select"][data-focus="true"] > div,
+    .main-page div[data-baseweb="select"][aria-expanded="true"] > div,
+    .main-page div[data-baseweb="select"]:focus-within > div,
+    .main-page .stSelectbox > div {
         border: none !important;
         box-shadow: none !important;
     }
@@ -100,8 +118,7 @@ st.markdown(
         outline-color: transparent !important;
     }
 
-    /* Strong global override: remove any focus/border/box-shadow for elements inside the sidebar
-       This ensures Streamlit's default red focus styling is not shown for text inputs. */
+    /* Strong global override: remove any focus/border/box-shadow for elements inside the sidebar */
     section[data-testid="stSidebar"] *:focus,
     section[data-testid="stSidebar"] *:focus-visible,
     section[data-testid="stSidebar"] *:focus-within {
@@ -110,7 +127,7 @@ st.markdown(
         border: none !important;
     }
 
-    /* Owner info section on listing card */
+    /* UPDATED: Owner info section with green accents */
     .owner-section {
       display: flex;
       align-items: center;
@@ -120,59 +137,114 @@ st.markdown(
       cursor: pointer;
       transition: background-color 0.2s ease;
       margin-bottom: 12px;
-      background: rgba(255,255,255,0.05);
+      background: rgba(0, 80, 53, 0.05);  /* CHANGED: Light green background */
+      border: 1px solid rgba(0, 80, 53, 0.1);  /* ADDED: Subtle green border */
     }
+    
     .owner-section:hover {
-      background: rgba(255,255,255,0.1);
+      background: rgba(0, 80, 53, 0.1);  /* CHANGED: Darker green on hover */
     }
+    
     .owner-avatar {
       width: 40px;
       height: 40px;
       border-radius: 50%;
       object-fit: cover;
-      border: 2px solid rgba(255,255,255,0.2);
+      border: 2px solid #005035;  /* CHANGED: Green border */
     }
+    
     .owner-avatar-placeholder {
       width: 40px;
       height: 40px;
       border-radius: 50%;
-      background: #87B481;
+      background: #005035;  /* CHANGED: Charlotte green */
       display: flex;
       align-items: center;
       justify-content: center;
       color: white;
       font-weight: bold;
-      border: 2px solid rgba(255,255,255,0.2);
+      border: 2px solid #005035;
     }
+    
     .owner-info {
       display: flex;
       flex-direction: column;
       gap: 2px;
     }
+    
     .owner-name {
       font-weight: 600;
-      color: white;
+      color: #005035;  /* CHANGED: Green text */
       font-size: 0.95em;
     }
+    
     .owner-rating {
       font-size: 0.85em;
-      color: rgba(255,255,255,0.7);
+      color: #666666;  /* CHANGED: Dark gray for better contrast */
+    }
+    
+    /* NEW: Improved search bar styling */
+    .search-container {
+      text-align: center;
+      margin: 80px auto 50px auto;
+      max-width: 700px;
+      padding: 40px;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0, 80, 53, 0.1);  /* ADDED: Soft green shadow */
+    }
+    
+    .search-title {
+      color: #005035;  /* CHANGED: Green title */
+      font-size: 3em;
+      margin-bottom: 20px;
+      font-weight: bold;
+    }
+    
+    .search-subtitle {
+      color: #666666;  /* CHANGED: Dark gray subtitle */
+      font-size: 1.3em;
+      margin-bottom: 40px;
+    }
+    
+    /* NEW: Custom search input styling */
+    .custom-search-input {
+      border: 2px solid #005035 !important;
+      border-radius: 50px !important;
+      padding: 15px 25px !important;
+      font-size: 1.1em !important;
+      background: white !important;
+    }
+    
+    .custom-search-input:focus {
+      border-color: #003d28 !important;
+      box-shadow: 0 0 0 3px rgba(0, 80, 53, 0.1) !important;
+    }
+    
+    /* UPDATED: Text colors for better contrast on white background */
+    .stTitle {
+      color: #005035 !important;  /* CHANGED: Green titles */
+    }
+    
+    .stMarkdown {
+      color: #333333 !important;  /* CHANGED: Dark text for better readability */
+    }
+    
+    /* UPDATED: Sold label color */
+    .sold-label {
+      color: #d32f2f !important;  /* CHANGED: Red for sold items */
+      font-weight: bold;
     }
 
     </style>
     """,
     unsafe_allow_html=True,
 )
-
-# Title
-st.title("Campus Market")
-st.write("Welcome to Campus Market! Buy and sell items with UNCC students.")
-
 # Start session
 db = SessionLocal()
 
 # --- Sidebar search controls ---
-st.sidebar.header("Search & Filters")
+st.sidebar.header("Advanced Search")
 search_query = st.sidebar.text_input("Search by keyword", placeholder="e.g. textbook, laptop")
 
 # Use text_input with placeholder instead of number_input
@@ -195,6 +267,51 @@ max_price = max_price if max_price is not None else float("inf")
 conditions = st.sidebar.multiselect("Condition", ALLOWED_CONDITIONS)
 categories = st.sidebar.multiselect("Category", ALLOWED_CATEGORIES)
 
+# Use get() method to safely access session state
+search_initiated = st.session_state.get('search_initiated', False)
+
+# Main search bar in center of page
+if not search_initiated:
+    st.markdown(
+        """
+        <div class="search-container">
+          <div class="search-title">Campus Market</div>
+          <div class="search-subtitle">What are you looking for today?</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    # Center the search bar
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        main_search_query = st.text_input(
+            "Search for items...",
+            placeholder="Type what you're looking for and press Enter...",
+            label_visibility="collapsed",
+            key="main_search_input"
+        )
+        
+        search_button = st.button("Search Campus Market", use_container_width=True, key="main_search_button")
+        
+        if main_search_query.strip() or search_button:
+            st.session_state.search_initiated = True
+            st.session_state.main_search_query = main_search_query
+            st.rerun()
+else:
+    # Display the main title when search is initiated
+    st.title("Campus Market")
+    main_search_query = st.session_state.get('main_search_query', '')
+    if main_search_query:
+        st.write(f"Showing results for: **{main_search_query}**")
+    else:
+        st.write("Browse all listings below:")
+
+# Use either sidebar search or main search
+active_search_query = search_query
+main_search_query = st.session_state.get('main_search_query', '')
+if main_search_query:
+    active_search_query = main_search_query
 
 # --- Fetch filtered listings or all listings ---
 if search_query or min_price or max_price or conditions:

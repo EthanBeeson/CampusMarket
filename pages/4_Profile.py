@@ -26,45 +26,185 @@ from app.models.message import Message
 st.markdown(
     """
     <style>
-    .stApp {
-        background-color: #005035;  /* dark green */
-    }
-    .block-container { max-width: 900px; margin: 0 auto; }
-    .card {
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.06);
-        border-radius: 14px;
-        padding: 18px 20px;
-        margin: 18px 0 26px 0;
-    }
-    .card h2, .card h3, .card p { margin: 6px 0; }
-    .center { text-align: center; }
-    div.stButton > button {
-        border-radius: 10px;
-        padding: 10px 14px;
-        font-weight: 600;
-        border: 1px solid rgba(255,255,255,0.15);
-    }
-    .profile-container {
-        background-color: rgba(135, 180, 129, 0.15);
-        padding: 20px;
-        border-radius: 10px;
-        margin-bottom: 20px;
-    }
-    .stTextInput>div>div>input,
-    .stTextArea>div>div>textarea {
-        background-color: white;
-        color: black;
-    }
-    .listing-date {
-        color: rgba(255,255,255,0.6);
-        font-size: 0.9em;
-        font-style: italic;
-    }
+        /* Global background */
+        .stApp { background-color: #ffffff !important; }
+        .block-container { max-width: 900px; margin: 0 auto; }
+
+        /* Headings and main content text */
+        div[data-testid="stAppViewContainer"] h1,
+        div[data-testid="stAppViewContainer"] h2,
+        div[data-testid="stAppViewContainer"] h3,
+        div[data-testid="stAppViewContainer"] h4,
+        div[data-testid="stAppViewContainer"] h5,
+        div[data-testid="stAppViewContainer"] h6 {
+            color: #005035 !important;   /* Charlotte green headings */
+        }
+        div[data-testid="stAppViewContainer"] .stMarkdown,
+        div[data-testid="stAppViewContainer"] p,
+        div[data-testid="stAppViewContainer"] span,
+        div[data-testid="stAppViewContainer"] label,
+        div[data-testid="stAppViewContainer"] div:not([data-testid="stSidebar"]) {
+            color: #333333 !important;   /* readable grey body text */
+        }
+        div[data-testid="stAppViewContainer"] .stCaption {
+            color: #666666 !important;   /* softer grey captions */
+        }
+
+        /* Sidebar text stays white */
+        section[data-testid="stSidebar"] p,
+        section[data-testid="stSidebar"] span,
+        section[data-testid="stSidebar"] div,
+        section[data-testid="stSidebar"] .stMarkdown {
+            color: #ffffff !important;
+        }
+
+        /* Cards and profile container */
+        .card {
+            background: #f9f9f9 !important;
+            border: 1px solid #e0e0e0 !important;
+            border-radius: 14px !important;
+            padding: 18px 20px !important;
+            margin: 18px 0 26px 0 !important;
+        }
+        .card h2, .card h3, .card p { margin: 6px 0 !important; }
+        .center { text-align: center !important; }
+        .profile-container {
+            background-color: rgba(135, 180, 129, 0.15) !important;
+            padding: 20px !important;
+            border-radius: 10px !important;
+            margin-bottom: 20px !important;
+        }
+
+        /* Inputs */
+        .stTextInput > div > div > input,
+        .stTextArea > div > div > textarea {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border: 2px solid #005035 !important;
+            border-radius: 10px !important;
+            padding: 12px 15px !important;
+        }
+        .stTextInput > div > div > input::placeholder,
+        .stTextArea > div > div > textarea::placeholder {
+            color: #666666 !important;
+            opacity: 1 !important;
+        }
+        .stTextInput > div > div > input:focus {
+            border-color: #003d28 !important;
+            box-shadow: 0 0 0 3px rgba(0, 80, 53, 0.1) !important;
+        }
+
+        /* Buttons: Charlotte green with white text */
+        div.stButton > button,
+        .stFormSubmitButton > button {
+            background-color: #005035 !important;
+            color: #ffffff !important;
+            border: 2px solid #005035 !important;
+            border-radius: 10px !important;
+            padding: 10px 14px !important;
+            font-weight: 600 !important;
+            width: 100% !important;
+            margin-top: 15px !important;
+        }
+        div.stButton > button *,
+        .stFormSubmitButton > button * {
+            color: #ffffff !important;
+        }
+        div.stButton > button:hover,
+        .stFormSubmitButton > button:hover {
+            background-color: #003d28 !important;
+            border-color: #003d28 !important;
+        }
+
+        /* Listing date style */
+        .listing-date {
+            color: #666666 !important;
+            font-size: 0.9em !important;
+            font-style: italic !important;
+        }
+
+        /* Notifications/messages */
+        div[data-testid="stNotification"] {
+            border-radius: 8px !important;
+            padding: 0.5rem 1rem !important;
+            background-color: #ffffff !important;
+        }
+        div[data-testid="stNotification"] p,
+        div[data-testid="stNotification"] span,
+        div[data-testid="stNotification"] div {
+            color: #000000 !important;
+            font-weight: 600 !important;
+        }
+        div[role="alert"] {
+            background-color: rgba(211, 47, 47, 0.12) !important;
+            border: 1px solid #d32f2f !important;
+            border-radius: 8px !important;
+        }
+        div[data-testid="stNotification"]:not([role="alert"]) {
+            background-color: rgba(0, 80, 53, 0.12) !important;
+            border: 1px solid #005035 !important;
+            border-radius: 8px !important;
+        }
+
+        /* Horizontal rule */
+        hr { border-color: #cccccc !important; }
+
+         /* Force all button labels to white */
+        div.stButton > button,
+        div.stButton > button *,
+        .stFormSubmitButton > button,
+        .stFormSubmitButton > button * {
+            color: #ffffff !important;
+        }
+        /* Password input */
+        .stTextInput input[type="password"] {
+            background-color: #ffffff !important;
+            color: #000000 !important;          /* typed text black */
+            border: 2px solid #005035 !important;
+            border-radius: 10px !important;
+            padding: 12px 15px !important;
+        }
+        .stTextInput input[type="password"]::placeholder {
+            color: #666666 !important;          /* placeholder grey */
+        }
+
+        /* File uploader */
+        [data-testid="stFileUploader"] section div div {
+            color: #000000 !important;          /* label text black */
+        }
+        [data-testid="stFileUploader"] section div div::placeholder {
+            color: #666666 !important;
+        }
+        [data-testid="stFileUploader"] section {
+            background-color: #ffffff !important;
+            border: 2px solid #005035 !important;
+            border-radius: 10px !important;
+            padding: 12px 15px !important;
+        }
+        /* Force Update Password button text white */
+        div[data-testid="stAppViewContainer"] .stFormSubmitButton > button,
+        div[data-testid="stAppViewContainer"] .stFormSubmitButton > button * {
+            color: #ffffff !important;
+        }
+        /* Force Browse files text black/white depending on background */
+        [data-testid="stFileUploader"] div,
+        [data-testid="stFileUploader"] span,
+        [data-testid="stFileUploader"] label {
+            color: #000000 !important;   /* black text for readability */
+        }
+        [data-testid="stFileUploader"] section {
+            background-color: #ffffff !important;
+            border: 2px solid #005035 !important;
+            border-radius: 10px !important;
+            padding: 12px 15px !important;
+        }
+
+
     </style>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
+
 
 def init_db_session():
     """Initialize database session"""
@@ -140,7 +280,7 @@ def delete_listing_safe(listing_id, current_user_id):
             
         # Verify ownership - this is the crucial check
         if listing.user_id != current_user_id:
-            st.error("🚫 You are not authorized to delete this listing.")
+            st.error("You are not authorized to delete this listing.")
             return False
         
         # Get associated images
@@ -151,9 +291,9 @@ def delete_listing_safe(listing_id, current_user_id):
             if os.path.exists(img.url):
                 try:
                     os.remove(img.url)
-                    st.info(f"🗑️ Deleted image: {os.path.basename(img.url)}")
+                    st.info(f"Deleted image: {os.path.basename(img.url)}")
                 except OSError as e:
-                    st.warning(f"⚠️ Could not delete image file: {e}")
+                    st.warning(f"Could not delete image file: {e}")
             db.delete(img)
         
         # Delete the listing
@@ -249,7 +389,7 @@ def display_listing_card(listing, images, current_user_id):
     
     # Delete button (only for owner)
     if listing.user_id == current_user_id:
-        if st.button("🗑️ Delete My Listing", key=f"delete_{listing.id}", use_container_width=True):
+        if st.button("🗑️Delete My Listing", key=f"delete_{listing.id}", use_container_width=True):
             if delete_listing_safe(listing.id, current_user_id):
                 st.rerun()
 
@@ -291,7 +431,7 @@ user_email = st.session_state["user_email"]
 # Header row: title on the left, profile picture / uploader on the right
 col_title, col_pic = st.columns([3, 1])
 with col_title:
-    st.title("👤 Your Profile")
+    st.title(" Your Profile")
 
     # Show the profile picture right below the title
     profile_pic_path = load_profile_picture(user_id)
@@ -452,45 +592,43 @@ else:
                 finally:
                     db.close()
 
+#COMMENTED OUT BECAUSE IT WAS REPLACED WITH A BUTTON IN QUICK ACTIONS
 
+# # Change Password Section (requires current password)
+# st.subheader("Change Password")
+# st.caption("For security, you must enter your current password.")
+# with st.form("change_password_form"):
+#     current_pw = st.text_input("Current Password", type="password")
+#     new_pw = st.text_input("New Password", type="password")
+#     confirm_pw = st.text_input("Confirm New Password", type="password")
+#     change_pw = st.form_submit_button("Update Password")
 
-st.markdown('</div>', unsafe_allow_html=True)
-
-# Change Password Section (requires current password)
-st.subheader("Change Password")
-st.caption("For security, you must enter your current password.")
-with st.form("change_password_form"):
-    current_pw = st.text_input("Current Password", type="password")
-    new_pw = st.text_input("New Password", type="password")
-    confirm_pw = st.text_input("Confirm New Password", type="password")
-    change_pw = st.form_submit_button("Update Password")
-
-    if change_pw:
-        if not current_pw:
-            st.error("Please enter your current password.")
-        elif not new_pw or not confirm_pw:
-            st.error("Please enter and confirm your new password.")
-        elif new_pw != confirm_pw:
-            st.error("New passwords do not match.")
-        else:
-            db = SessionLocal()
-            try:
-                if not verify_user_password(db, user_id, current_pw):
-                    st.error("Current password is incorrect.")
-                else:
-                    try:
-                        update_user_password(db, user_id, new_pw)
-                        st.success("Password updated successfully.")
-                    except ValueError as e:
-                        st.error(str(e))
-            finally:
-                db.close()
+#     if change_pw:
+#         if not current_pw:
+#             st.error("Please enter your current password.")
+#         elif not new_pw or not confirm_pw:
+#             st.error("Please enter and confirm your new password.")
+#         elif new_pw != confirm_pw:
+#             st.error("New passwords do not match.")
+#         else:
+#             db = SessionLocal()
+#             try:
+#                 if not verify_user_password(db, user_id, current_pw):
+#                     st.error("Current password is incorrect.")
+#                 else:
+#                     try:
+#                         update_user_password(db, user_id, new_pw)
+#                         st.success("Password updated successfully.")
+#                     except ValueError as e:
+#                         st.error(str(e))
+#             finally:
+#                 db.close()
 
 
 st.divider()
 
 # User's Listings Section
-st.header("📋 Your Listings")
+st.header("Your Listings")
 
 db = SessionLocal()
 try:
@@ -512,27 +650,29 @@ try:
 finally:
     db.close()
 
-st.divider()
-
 # Enhanced Quick Actions Section with Logout
 st.markdown("---")
 st.header("Quick Actions")
 
-col1, col2, col3 = st.columns(3)
+col1, col2, col3 , col4= st.columns(4)
 
 with col1:
-    if st.button("📝 Create New Listing", use_container_width=True):
+    if st.button("Create New Listing", use_container_width=True):
         st.switch_page("pages/1_create_listing.py")
 
 with col2:
-    if st.button("🔍 Browse Listings", use_container_width=True):
+    if st.button("Browse Listings", use_container_width=True):
         st.switch_page("main.py")
 
 with col3:
     # Enhanced Logout button with confirmation
-    if st.button("🚪 Logout", use_container_width=True, type="secondary"):
+    if st.button("Logout", use_container_width=True, type="secondary"):
         # Clear session state
         for key in list(st.session_state.keys()):
             del st.session_state[key]
         st.success("Logged out successfully!")
         st.rerun()
+
+with col4:
+    if st.button("Reset Password",use_container_width=True):
+        st.switch_page("pages/7_Reset_Password.py")

@@ -20,40 +20,186 @@ st.set_page_config(page_title="Public Profile - Campus Market", layout="wide")
 st.markdown(
     """
     <style>
-    .stApp { background-color: #005035; }
-    .block-container { max-width: 900px; margin: 0 auto; }
-    .card {
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.06);
-        border-radius: 14px;
-        padding: 18px 20px;
-        margin: 18px 0 26px 0;
-    }
-    .card h2, .card h3, .card p { margin: 6px 0; }
-    .center { text-align: center; }
-    div.stButton > button {
-        border-radius: 10px;
-        padding: 10px 14px;
-        font-weight: 600;
-        border: 1px solid rgba(255,255,255,0.15);
-    }
-    .profile-info h1 { margin: 0; color: white; }
-    .profile-info .rating { font-size: 1.1em; color: #87B481; }
-    .review-card {
-        background-color: rgba(135, 180, 129, 0.2);
-        padding: 15px;
-        border-radius: 8px;
-        margin-bottom: 15px;
-        border-left: 4px solid #87B481;
-    }
-    .review-header { font-weight: bold; color: white; margin-bottom: 5px; }
-    .review-rating { color: #FFD700; font-weight: bold; }
-    .review-comment { color: rgba(255,255,255,0.9); margin-top: 5px; }
-    .review-date { font-size: 0.85em; color: rgba(255,255,255,0.6); font-style: italic; }
+        /* Global background */
+        .stApp { background-color: #ffffff !important; }
+        .block-container { max-width: 900px; margin: 0 auto; }
+
+        /* Headings and main content text */
+        div[data-testid="stAppViewContainer"] h1,
+        div[data-testid="stAppViewContainer"] h2,
+        div[data-testid="stAppViewContainer"] h3,
+        div[data-testid="stAppViewContainer"] h4,
+        div[data-testid="stAppViewContainer"] h5,
+        div[data-testid="stAppViewContainer"] h6 {
+            color: #005035 !important;   /* Charlotte green headings */
+        }
+        div[data-testid="stAppViewContainer"] .stMarkdown,
+        div[data-testid="stAppViewContainer"] p,
+        div[data-testid="stAppViewContainer"] span,
+        div[data-testid="stAppViewContainer"] label,
+        div[data-testid="stAppViewContainer"] div:not([data-testid="stSidebar"]) {
+            color: #333333 !important;   /* readable grey body text */
+        }
+        div[data-testid="stAppViewContainer"] .stCaption {
+            color: #666666 !important;   /* softer grey captions */
+        }
+
+        /* Sidebar text stays white */
+        section[data-testid="stSidebar"] p,
+        section[data-testid="stSidebar"] span,
+        section[data-testid="stSidebar"] div,
+        section[data-testid="stSidebar"] .stMarkdown {
+            color: #ffffff !important;
+        }
+
+        /* Cards and profile container */
+        .card {
+            background: #f9f9f9 !important;
+            border: 1px solid #e0e0e0 !important;
+            border-radius: 14px !important;
+            padding: 18px 20px !important;
+            margin: 18px 0 26px 0 !important;
+        }
+        .card h2, .card h3, .card p { margin: 6px 0 !important; }
+        .center { text-align: center !important; }
+        .profile-container {
+            background-color: rgba(135, 180, 129, 0.15) !important;
+            padding: 20px !important;
+            border-radius: 10px !important;
+            margin-bottom: 20px !important;
+        }
+
+        /* Inputs */
+        .stTextInput > div > div > input,
+        .stTextArea > div > div > textarea {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border: 2px solid #005035 !important;
+            border-radius: 10px !important;
+            padding: 12px 15px !important;
+        }
+        .stTextInput > div > div > input::placeholder,
+        .stTextArea > div > div > textarea::placeholder {
+            color: #666666 !important;
+            opacity: 1 !important;
+        }
+        .stTextInput > div > div > input:focus {
+            border-color: #003d28 !important;
+            box-shadow: 0 0 0 3px rgba(0, 80, 53, 0.1) !important;
+        }
+
+        /* Buttons: Charlotte green with white text */
+        div.stButton > button,
+        .stFormSubmitButton > button {
+            background-color: #005035 !important;
+            color: #ffffff !important;
+            border: 2px solid #005035 !important;
+            border-radius: 10px !important;
+            padding: 10px 14px !important;
+            font-weight: 600 !important;
+            width: 100% !important;
+            margin-top: 15px !important;
+        }
+        div.stButton > button *,
+        .stFormSubmitButton > button * {
+            color: #ffffff !important;
+        }
+        div.stButton > button:hover,
+        .stFormSubmitButton > button:hover {
+            background-color: #003d28 !important;
+            border-color: #003d28 !important;
+        }
+
+        /* Listing date style */
+        .listing-date {
+            color: #666666 !important;
+            font-size: 0.9em !important;
+            font-style: italic !important;
+        }
+
+        /* Notifications/messages */
+        div[data-testid="stNotification"] {
+            border-radius: 8px !important;
+            padding: 0.5rem 1rem !important;
+            background-color: #ffffff !important;
+        }
+        div[data-testid="stNotification"] p,
+        div[data-testid="stNotification"] span,
+        div[data-testid="stNotification"] div {
+            color: #000000 !important;
+            font-weight: 600 !important;
+        }
+        div[role="alert"] {
+            background-color: rgba(211, 47, 47, 0.12) !important;
+            border: 1px solid #d32f2f !important;
+            border-radius: 8px !important;
+        }
+        div[data-testid="stNotification"]:not([role="alert"]) {
+            background-color: rgba(0, 80, 53, 0.12) !important;
+            border: 1px solid #005035 !important;
+            border-radius: 8px !important;
+        }
+
+        /* Horizontal rule */
+        hr { border-color: #cccccc !important; }
+
+         /* Force all button labels to white */
+        div.stButton > button,
+        div.stButton > button *,
+        .stFormSubmitButton > button,
+        .stFormSubmitButton > button * {
+            color: #ffffff !important;
+        }
+        /* Password input */
+        .stTextInput input[type="password"] {
+            background-color: #ffffff !important;
+            color: #000000 !important;          /* typed text black */
+            border: 2px solid #005035 !important;
+            border-radius: 10px !important;
+            padding: 12px 15px !important;
+        }
+        .stTextInput input[type="password"]::placeholder {
+            color: #666666 !important;          /* placeholder grey */
+        }
+
+        /* File uploader */
+        [data-testid="stFileUploader"] section div div {
+            color: #000000 !important;          /* label text black */
+        }
+        [data-testid="stFileUploader"] section div div::placeholder {
+            color: #666666 !important;
+        }
+        [data-testid="stFileUploader"] section {
+            background-color: #ffffff !important;
+            border: 2px solid #005035 !important;
+            border-radius: 10px !important;
+            padding: 12px 15px !important;
+        }
+        /* Force Update Password button text white */
+        div[data-testid="stAppViewContainer"] .stFormSubmitButton > button,
+        div[data-testid="stAppViewContainer"] .stFormSubmitButton > button * {
+            color: #ffffff !important;
+        }
+        /* Force Browse files text black/white depending on background */
+        [data-testid="stFileUploader"] div,
+        [data-testid="stFileUploader"] span,
+        [data-testid="stFileUploader"] label {
+            color: #000000 !important;   /* black text for readability */
+        }
+        [data-testid="stFileUploader"] section {
+            background-color: #ffffff !important;
+            border: 2px solid #005035 !important;
+            border-radius: 10px !important;
+            padding: 12px 15px !important;
+        }
+
+
     </style>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
+
+
 
 # Get user_id from URL query params or session state
 query_params = st.query_params
