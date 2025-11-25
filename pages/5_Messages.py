@@ -157,6 +157,36 @@ USER_ID = st.session_state["user_id"]
 
 RETURN_TO_MAIN = st.session_state.get("return_to_main_after_send", False)
 
+def render_messages(messages, current_user_id):
+    """Render messages as chat bubbles with timestamps."""
+    for msg in sorted(messages, key=lambda m: m.created_at):
+        is_me = msg.sender_id == current_user_id
+        align = "flex-end" if is_me else "flex-start"
+        bubble_color = "#DCF8C6" if is_me else "#FFFFFF"
+
+        st.markdown(
+            f"""
+        <div style="display:flex; justify-content:{align}; margin:5px 0;">
+            <div style="
+                background-color:{bubble_color};
+                padding:10px 15px;
+                max-width:60%;
+                border-radius:12px;
+                box-shadow:0 1px 2px rgba(0,0,0,0.1);
+                color: black !important;
+                -webkit-text-fill-color: black;
+            ">
+                {msg.content}
+                <div style="font-size:11px; color:gray; text-align:right;">
+                    {msg.created_at.strftime("%Y-%m-%d %H:%M")}
+                </div>
+            </div>
+        </div>
+        """,
+            unsafe_allow_html=True
+        )
+
+
 # ------------------------------
 # LOAD ALL MESSAGES
 # ------------------------------
@@ -198,25 +228,32 @@ if forced_other_id and forced_listing_id:
 
     if conversation_msgs:
         st.info("Existing conversation:")
-        for msg in sorted(conversation_msgs, key=lambda x: x.created_at):
-            is_me = msg.sender_id == USER_ID
-            align = "flex-end" if is_me else "flex-start"
-            bubble_color = "#DCF8C6" if is_me else "#FFFFFF"
-            st.markdown(
-                f"""
-                <div class="chat-row">
-                    <div class="chat-bubble {'me' if is_me else 'other'}">
-                        {msg.content}
-                        <div class="chat-timestamp">
-                            {msg.created_at.strftime("%Y-%m-%d %H:%M")}
-                        </div>
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+        render_messages(conversation_msgs, USER_ID)
     else:
         st.info("You have no messages yet — start the conversation below")
+
+
+    #if conversation_msgs:
+       #st.info("Existing conversation:")
+        #for msg in sorted(conversation_msgs, key=lambda x: x.created_at):
+            #is_me = msg.sender_id == USER_ID
+            #align = "flex-end" if is_me else "flex-start"
+            #bubble_color = "#DCF8C6" if is_me else "#FFFFFF"
+            #st.markdown(
+                #f"""
+                #<div class="chat-row">
+                    #<div class="chat-bubble {'me' if is_me else 'other'}">
+                        #{msg.content}
+                        #<div class="chat-timestamp">
+                            #{msg.created_at.strftime("%Y-%m-%d %H:%M")}
+                        #</div>
+                    #</div>
+                #</div>
+                #""",
+                #unsafe_allow_html=True
+            #)
+    #else:
+        #st.info("You have no messages yet — start the conversation below")
 
     new_msg = st.text_area(
         "Your Message",
@@ -400,33 +437,36 @@ chat_box = st.container()
 selected_messages = sorted(selected_messages, key=lambda m: m.created_at)
 
 with chat_box:
-    for msg in selected_messages:  # oldest → newest
-        is_me = msg.sender_id == USER_ID
+    render_messages(selected_messages, USER_ID)
 
-        bubble_color = "#DCF8C6" if is_me else "#FFFFFF"
-        align = "flex-end" if is_me else "flex-start"
+#with chat_box:
+    #for msg in selected_messages:  # oldest → newest
+        #is_me = msg.sender_id == USER_ID
 
-        st.markdown(
-            f"""
-            <div style="display:flex; justify-content:{align}; margin:5px 0;">
-                <div style="
-                    background-color:{bubble_color};
-                    padding:10px 15px;
-                    max-width:60%;
-                    border-radius:12px;
-                    box-shadow:0 1px 2px rgba(0,0,0,0.1);
-                    color: black !important;
-                    -webkit-text-fill-color: black;
-                ">
-                    {msg.content}
-                    <div style="font-size:11px; color:gray; text-align:right;">
-                        {msg.created_at.strftime("%Y-%m-%d %H:%M")}
-                    </div>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        #bubble_color = "#DCF8C6" if is_me else "#FFFFFF"
+        #align = "flex-end" if is_me else "flex-start"
+
+        #st.markdown(
+            #f"""
+            #<div style="display:flex; justify-content:{align}; margin:5px 0;">
+                #<div style="
+                    #background-color:{bubble_color};
+                    #padding:10px 15px;
+                    #max-width:60%;
+                    #border-radius:12px;
+                    #box-shadow:0 1px 2px rgba(0,0,0,0.1);
+                    #color: black !important;
+                    #-webkit-text-fill-color: black;
+                #">
+                    #{msg.content}
+                    #<div style="font-size:11px; color:gray; text-align:right;">
+                        #{msg.created_at.strftime("%Y-%m-%d %H:%M")}
+                    #</div>
+                #</div>
+            #</div>
+            #""",
+            #unsafe_allow_html=True
+        #)
 
 st.markdown("---")
 
