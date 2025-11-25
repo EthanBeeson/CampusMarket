@@ -10,7 +10,7 @@ st.markdown(
     """
     <style>
         /* Global background */
-        .stApp { background-color: #ffffff !important; }
+        .stApp { background-color: #fffdf2 !important; }
         .block-container { max-width: 900px; margin: 0 auto; }
 
         /* 1) Main content text (title, body, caption) */
@@ -133,9 +133,8 @@ st.markdown(
 )
 
 
-st.title("🔑 Login")
+st.title("Login")
 st.write("Please sign in with your Charlotte student email and password.")
-st.caption("Forgot your password? Use the reset link below to set a new one.")
 
 # Check if user is already authenticated
 if st.session_state.get("authenticated", False):
