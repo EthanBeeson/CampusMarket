@@ -393,7 +393,7 @@ def display_listing_card(listing, images, current_user_id):
     
     # Delete button (only for owner)
     if listing.user_id == current_user_id:
-        unique_delete_key = f"delete_{listing.id}_{listing.user_id}"
+        unique_delete_key = f"delete_{listing.id}_{listing.user_id}_profile_section"
         if st.button("🗑️Delete My Listing", key=unique_delete_key, use_container_width=True):
             if delete_listing_safe(listing.id, current_user_id):
                 st.rerun()
@@ -691,15 +691,19 @@ try:
         if listing and listing.user_id != user_id:
             filtered_favorites.append(listing)
 
-    if not favorites:
-        st.info("You haven't favorited any listings yet.")
+    if not filtered_favorites:
+        st.info("You haven't saved any items to your favorite list yet.")
     else:
-        for fav in favorites:
-            listing = db.query(Listing).filter(Listing.id == fav.listing_id).first()
+        for listing in filtered_favorites:  # <- use filtered_favorites here
+            listing_images = get_listing_images(db, listing.id)
+            display_listing_card(listing, listing_images, user_id)
+        
+        #for fav in favorites:
+            #listing = db.query(Listing).filter(Listing.id == fav.listing_id).first()
 
-            if listing:
-                listing_images = get_listing_images(db, listing.id)
-                display_listing_card(listing, listing_images, user_id)
+            #if listing:
+                #listing_images = get_listing_images(db, listing.id)
+                #display_listing_card(listing, listing_images, user_id)
 
 finally:
     db.close()
