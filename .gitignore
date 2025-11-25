@@ -10,7 +10,7 @@ __pycache__/
 campus_market.db
 
 # Image Uploads
-uploads/
+#uploads/
 
 # OS files
 .DS_Store
