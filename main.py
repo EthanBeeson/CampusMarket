@@ -200,6 +200,13 @@ st.markdown(
       margin-bottom: 20px;
       font-weight: bold;
     }
+
+    .title{
+        color: #005035;
+        font-size: 3em;
+        margin-bottom: 20px;
+        font-weight: bold;
+    }
     
     .search-subtitle {
       color: #666666;  /* CHANGED: Dark gray subtitle */
@@ -222,7 +229,7 @@ st.markdown(
     }
     
     /* UPDATED: Text colors for better contrast on white background */
-    .stTitle {
+    .stTitle, h1 {
       color: #005035 !important;  /* CHANGED: Green titles */
     }
     
@@ -235,7 +242,26 @@ st.markdown(
       color: #d32f2f !important;  /* CHANGED: Red for sold items */
       font-weight: bold;
     }
+    .listings-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px; /* space between cards */
+        }
 
+    .card {
+        background: #ffffff;
+        border: 2px solid #005035;
+        border-radius: 14px;
+        padding: 18px 20px;
+        box-shadow: 0 8px 32px rgba(0, 80, 53, 0.1); /* glowing effect */
+        transition: all 0.2s ease;
+    }
+
+    .card:hover {
+        box-shadow: 0 12px 36px rgba(0, 80, 53, 0.2);
+        transform: translateY(-2px); /* subtle lift on hover */
+    }
+    
     </style>
     """,
     unsafe_allow_html=True,
@@ -301,23 +327,39 @@ if not search_initiated:
 else:
     # Display the main title when search is initiated
     st.title("Campus Market")
+    # Add clear search button
+    col1, col2 = st.columns([3, 1])
+    with col2:
+        if st.button("Clear Search", type="secondary"):
+            st.session_state.search_initiated = False
+            st.session_state.main_search_query = ''
+            st.rerun()
+    
     main_search_query = st.session_state.get('main_search_query', '')
     if main_search_query:
         st.write(f"Showing results for: **{main_search_query}**")
     else:
         st.write("Browse all listings below:")
 
-# Use either sidebar search or main search
-active_search_query = search_query
+# --- Combine both search methods ---
+# Determine which search query to use (main search takes priority)
 main_search_query = st.session_state.get('main_search_query', '')
-if main_search_query:
-    active_search_query = main_search_query
+active_search_query = main_search_query if main_search_query else search_query
 
-# --- Fetch filtered listings or all listings ---
-if search_query or min_price or max_price or conditions:
+# --- Fetch filtered listings ---
+# Use search_listings if ANY search criteria are present
+has_search_criteria = (
+    active_search_query or 
+    min_price > 0 or 
+    max_price != float('inf') or 
+    conditions or 
+    categories
+)
+
+if has_search_criteria:
     listings = search_listings(
         db,
-        keyword=search_query if search_query else None,
+        keyword=active_search_query if active_search_query else None,
         min_price=min_price if min_price > 0 else None,
         max_price=max_price if max_price > 0 else None,
         conditions=conditions if conditions else None,
@@ -343,9 +385,7 @@ else:
         is_sold = getattr(l, "is_sold", False)
         label = " 🟡 SOLD" if is_sold else ""
         title_text = f"~~{l.title}~~" if is_sold else l.title
-
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-
+        st.markdown("---")
         # --- Owner section (clickable to view public profile) ---
         owner = db.query(User).filter(User.id == l.user_id).first()
 
@@ -585,6 +625,6 @@ else:
 
     # Render all listings
     for item in listings:
-        render_listing(item)
+            render_listing(item)
 
 db.close()
