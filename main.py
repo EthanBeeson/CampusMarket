@@ -13,6 +13,8 @@ from app.crud.listings import ALLOWED_CATEGORIES
 from app.models.message import Message
 from app.models.user import User
 from app.crud.reviews import get_reviews_for_user, get_user_average_rating
+from app.crud.favorites import is_favorited, add_favorite, remove_favorite
+
 
 st.set_page_config(page_title="Campus Market", layout="wide")
 
@@ -340,6 +342,8 @@ if not listings:
 else:
     # ---------- Listing Renderer ---------- #
     def render_listing(l):
+        from app.db import SessionLocal #added for favs
+        db = SessionLocal() #added for favs
         is_sold = getattr(l, "is_sold", False)
         label = " 🟡 SOLD" if is_sold else ""
         title_text = f"~~{l.title}~~" if is_sold else l.title
@@ -348,6 +352,46 @@ else:
 
         # --- Owner section (clickable to view public profile) ---
         owner = db.query(User).filter(User.id == l.user_id).first()
+
+        # --- Favorite button ---
+        if "user_id" in st.session_state:
+            current_user_id = st.session_state["user_id"]
+
+            # Only show favorite button if the user is NOT the owner
+            if l.user_id != current_user_id:
+                favorited = is_favorited(db, current_user_id, l.id)
+
+                # Set heart label: white if not favorited, red if favorited
+                heart_label = "❤️" if favorited else "🤍"
+
+                if st.button(heart_label, key=f"fav_{l.id}", use_container_width=True):
+                    if favorited:
+                        remove_favorite(db, current_user_id, l.id)
+                    else:
+                        add_favorite(db, current_user_id, l.id)
+                    st.rerun()
+
+        # Only show favorite button if user is logged in
+        #if "user_id" in st.session_state and st.session_state["user_id"] is not None:
+
+            #current_user_id = st.session_state["user_id"]
+            #if l.user_id != current_user_id:  # <-- Skip own listings
+                #favorited = is_favorited(db, st.session_state["user_id"], l.id)
+
+                #if favorited:
+                    #if st.button("🤍", key=f"fav_{l.id}"):
+                        #remove_favorite(db, st.session_state["user_id"], l.id)
+                        #st.rerun()
+                #else:
+                    #if st.button("❤️", key=f"fav_{l.id}"):
+                        #add_favorite(db, st.session_state["user_id"], l.id)
+                        #st.rerun()
+
+        else:
+            st.caption("Log in to save this listing")
+
+        db.close()
+
 
         # Always render owner container; use fallbacks when user or profile picture missing
         owner_exists = bool(owner)
@@ -582,6 +626,26 @@ else:
                 st.switch_page("pages/5_Messages.py")
 
         st.markdown('</div>', unsafe_allow_html=True)  # end card
+
+        # FAVORITE BUTTON (heart)
+        #if "user_id" in st.session_state and st.session_state["user_id"] is not None:
+
+            #db = SessionLocal()
+            #favorited = is_favorited(db, st.session_state["user_id"], l.id)
+
+            #heart = "❤️" if favorited else "🤍"
+            #unique_key = f"fav_{l.id}_{hash(str(l.title))}"
+
+            #if st.button(heart, key=unique_key):
+                #if favorited:
+                    #remove_favorite(db, st.session_state["user_id"], l.id)
+                #else:
+                    #add_favorite(db, st.session_state["user_id"], l.id)
+
+                #db.close()
+               # st.rerun()
+
+            #db.close()
 
     # Render all listings
     for item in listings:

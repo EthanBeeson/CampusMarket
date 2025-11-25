@@ -21,6 +21,10 @@ from app.crud.users import (
     verify_user_password,
 )
 from app.models.message import Message
+from app.crud.favorites import is_favorited, add_favorite, remove_favorite, get_user_favorites
+from app.models.favorite import Favorite
+
+st.divider()
 
 # Charlotte colors styling
 st.markdown(
@@ -389,7 +393,8 @@ def display_listing_card(listing, images, current_user_id):
     
     # Delete button (only for owner)
     if listing.user_id == current_user_id:
-        if st.button("🗑️Delete My Listing", key=f"delete_{listing.id}", use_container_width=True):
+        unique_delete_key = f"delete_{listing.id}_{listing.user_id}"
+        if st.button("🗑️Delete My Listing", key=unique_delete_key, use_container_width=True):
             if delete_listing_safe(listing.id, current_user_id):
                 st.rerun()
 
@@ -414,6 +419,26 @@ def display_listing_card(listing, images, current_user_id):
             with c2:
                 if st.button("Cancel", key=f"report_cancel_{listing.id}"):
                     st.session_state.pop(f"report_open_{listing.id}", None)
+
+    # --- Favorite button for non-owner ---
+    if listing.user_id != current_user_id and "user_id" in st.session_state:
+        db = SessionLocal()  # open db session
+        favorited = is_favorited(db, current_user_id, listing.id)  # check if already favorited
+
+        # Heart label: red if favorited, white if not
+        heart_label = "❤️" if favorited else "🤍"
+
+        # Button with unique key for profile
+        if st.button(heart_label, key=f"profile_fav_{listing.id}", use_container_width=True):
+            if favorited:
+                remove_favorite(db, current_user_id, listing.id)
+            else:
+                add_favorite(db, current_user_id, listing.id)
+            db.close()
+            st.rerun()
+
+        db.close()
+
     
     st.markdown('</div>', unsafe_allow_html=True)  # end card
 
@@ -649,6 +674,36 @@ try:
             
 finally:
     db.close()
+
+# USER FAVORITES SECTION
+
+st.header("Your Favorite Listings")
+
+db = SessionLocal()
+
+try:
+    favorites = get_user_favorites(db, user_id)
+
+    # Filter out any listing that belongs to the current user
+    filtered_favorites = []
+    for fav in favorites:
+        listing = db.query(Listing).filter(Listing.id == fav.listing_id).first()
+        if listing and listing.user_id != user_id:
+            filtered_favorites.append(listing)
+
+    if not favorites:
+        st.info("You haven't favorited any listings yet.")
+    else:
+        for fav in favorites:
+            listing = db.query(Listing).filter(Listing.id == fav.listing_id).first()
+
+            if listing:
+                listing_images = get_listing_images(db, listing.id)
+                display_listing_card(listing, listing_images, user_id)
+
+finally:
+    db.close()
+
 
 # Enhanced Quick Actions Section with Logout
 st.markdown("---")

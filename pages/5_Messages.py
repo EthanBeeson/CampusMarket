@@ -31,6 +31,8 @@ if "user_id" not in st.session_state:
 
 USER_ID = st.session_state["user_id"]
 
+RETURN_TO_MAIN = st.session_state.get("return_to_main_after_send", False)
+
 # ------------------------------
 # LOAD ALL MESSAGES
 # ------------------------------
@@ -131,7 +133,16 @@ if forced_other_id and forced_listing_id:
                 del st.session_state["open_chat_with_user"]
                 del st.session_state["open_chat_for_listing"]
 
-                st.rerun()
+                # Redirect back to main page after sending
+                st.switch_page("main.py")
+
+                # Redirect back to Main page if coming from Main
+                #if RETURN_TO_MAIN:
+                    #del st.session_state["return_to_main_after_send"]
+                    #st.success("Message sent! Returning to Home Page...")
+                    #st.switch_page("main")  # <-- redirects back
+                #else:
+                    #st.rerun()
 
             except Exception as e:
                 st.error(str(e))
@@ -167,9 +178,12 @@ def get_username(user: User) -> str:
 # ------------------------------
 # SIDEBAR: Conversation List
 # ------------------------------
+# Sidebar: conversation list
 st.sidebar.header("Your Conversations")
 
 conversation_labels = {}
+
+# Build the conversation labels and remember latest message timestamp
 for (other_id, listing_id), msgs in conversations.items():
     other_user = db.query(User).filter(User.id == other_id).first()
     listing = db.query(Listing).filter(Listing.id == listing_id).first()
@@ -178,39 +192,78 @@ for (other_id, listing_id), msgs in conversations.items():
     listing_title = listing.title if listing else "No Listing"
 
     label = f"{username} — {listing_title}"
-    conversation_labels[label] = (other_id, listing_id)
+    conversation_labels[label] = (other_id, listing_id, max(msg.created_at for msg in msgs))
 
-#selected_label = st.sidebar.selectbox("Select a conversation", list(conversation_labels.keys()))
-#selected_other_id, selected_listing_id = conversation_labels[selected_label]
+# Sort labels by latest message timestamp descending
+sorted_labels = sorted(conversation_labels.items(), key=lambda x: x[1][2], reverse=True)
 
-#selected_messages = conversations[(selected_other_id, selected_listing_id)]
-
-#st.sidebar.header("Your Conversations")
-
-# Store selected conversation once user clicks
-if "selected_conversation" not in st.session_state:
-    st.session_state["selected_conversation"] = None
-
-for label, (other_id, listing_id) in conversation_labels.items():
-
-    if st.sidebar.button(label, use_container_width=True):
-        st.session_state["selected_conversation"] = (other_id, listing_id)
-
-
-# Default to first conversation if none selected yet
-if st.session_state["selected_conversation"] is None:
-    # Direct back to main page if no conversation have been started
+# Check if the user has any previous conversations
+if not sorted_labels:
     st.title("Messages")
-    st.info("No conversations have been started yet.")
-    st.markdown("Go to the Home Page and click Contact Seller on a listing to start a conversation!")
+    st.info("You have no conversations yet. Start a conversation by clicking 'Contact Seller' on a listing!")
     db.close()
     st.stop()
 
+# Sidebar buttons for each conversation
+for label, (other_id, listing_id, _) in sorted_labels:
+    if st.sidebar.button(label, key=f"conv_{other_id}_{listing_id}", use_container_width=True):
+        st.session_state["selected_conversation"] = (other_id, listing_id)
+
+# ------------------------------
+# Default to most recent conversation
+# ------------------------------
+if "selected_conversation" not in st.session_state:
+    most_recent = sorted_labels[0][1]  # (other_id, listing_id, latest_timestamp)
+    st.session_state["selected_conversation"] = (most_recent[0], most_recent[1])
+
 selected_other_id, selected_listing_id = st.session_state["selected_conversation"]
-selected_messages = conversations[(selected_other_id, selected_listing_id)]
+selected_messages = sorted(conversations[(selected_other_id, selected_listing_id)], key=lambda m: m.created_at)
 
 
-#st.title(f"Chat with {selected_label}")
+#st.sidebar.header("Your Conversations")
+
+#conversation_labels = {}
+#for (other_id, listing_id), msgs in conversations.items():
+    #other_user = db.query(User).filter(User.id == other_id).first()
+    #listing = db.query(Listing).filter(Listing.id == listing_id).first()
+
+    #username = get_username(other_user) if other_user else f"User {other_id}"
+    #listing_title = listing.title if listing else "No Listing"
+
+    #label = f"{username} — {listing_title}"
+    #conversation_labels[label] = (other_id, listing_id)
+
+#selected_label = st.sidebar.selectbox("Select a conversation", list(conversation_labels.keys())) nounmark
+#selected_other_id, selected_listing_id = conversation_labels[selected_label] nounmark
+
+#selected_messages = conversations[(selected_other_id, selected_listing_id)]  nounmark
+
+#st.sidebar.header("Your Conversations")  no unamrk
+
+# Store selected conversation once user clicks
+#if "selected_conversation" not in st.session_state:
+   # st.session_state["selected_conversation"] = None
+
+#for label, (other_id, listing_id) in conversation_labels.items():
+
+    #if st.sidebar.button(label, use_container_width=True):
+        #st.session_state["selected_conversation"] = (other_id, listing_id)
+
+
+# Default to first conversation if none selected yet
+#if st.session_state["selected_conversation"] is None:
+    # Direct back to main page if no conversation have been started
+    #st.title("Messages")
+    #st.info("No conversations have been started yet.")
+    #st.markdown("Go to the Home Page and click Contact Seller on a listing to start a conversation!")
+    #db.close()
+    #st.stop()
+
+#selected_other_id, selected_listing_id = st.session_state["selected_conversation"]
+#selected_messages = conversations[(selected_other_id, selected_listing_id)]
+
+
+#st.title(f"Chat with {selected_label}")   Dont unmark this one
 
 other_user = db.query(User).filter(User.id == selected_other_id).first()
 listing = db.query(Listing).filter(Listing.id == selected_listing_id).first()
