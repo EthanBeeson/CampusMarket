@@ -13,8 +13,11 @@ from app.crud.listings import ALLOWED_CATEGORIES
 from app.models.message import Message
 from app.models.user import User
 from app.crud.reviews import get_reviews_for_user, get_user_average_rating
+from app.crud.favorites import is_favorited, add_favorite, remove_favorite
+
 
 st.set_page_config(page_title="Campus Market", layout="wide")
+
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -34,49 +37,66 @@ with engine.begin() as conn:
 st.markdown(
     """
     <style>
-      .stApp { background-color: #005035; }
+      /* CHANGED: White background instead of green */
+      .stApp { background-color: #fffdf2; }
+      
       /* center column width */
       .block-container { max-width: 900px; margin: 0 auto; }
-      /* listing card */
+      
+      /* UPDATED: Listing card with white background and green border */
       .card {
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.06);
+        background: #ffffff;
+        border: 2px solid #005035;  /* CHANGED: Charlotte green border */
         border-radius: 14px;
         padding: 18px 20px;
         margin: 18px 0 26px 0;
+        box-shadow: 0 4px 12px rgba(0, 80, 53, 0.1);  /* ADDED: Subtle shadow */
       }
+      
       /* center headings inside cards without changing global titles */
       .card h2, .card h3, .card p { margin: 6px 0; }
       .center { text-align: center; }
-      /* nicer buttons */
+      
+      /* UPDATED: Nicer buttons with Charlotte green */
       div.stButton > button {
         border-radius: 10px;
         padding: 10px 14px;
         font-weight: 600;
-        border: 1px solid rgba(255,255,255,0.15);
+        border: 2px solid #005035;  /* CHANGED: Green border */
+        background-color: #005035;   /* CHANGED: Green background */
+        color: white;                /* CHANGED: White text */
       }
-            /* Focused / active multiselect/select wrappers */
-            [data-testid="stSidebar"] .stMultiSelect div[data-baseweb="select"][data-focus="true"] > div,
-            .block-container .stMultiSelect div[data-baseweb="select"][data-focus="true"] > div,
+      
+      /* UPDATED: Hover effect for buttons */
+      div.stButton > button:hover {
+        background-color: #003d28;   /* CHANGED: Darker green on hover */
+        border-color: #003d28;
+      }
+
+      /* Focused / active multiselect/select wrappers */
+      [data-testid="stSidebar"] .stMultiSelect div[data-baseweb="select"][data-focus="true"] > div,
+      .block-container .stMultiSelect div[data-baseweb="select"][data-focus="true"] > div,
+      
       /* compact vertical spacing between stacked widgets */
       .element-container:has(> div.stButton) { margin: 0.2rem 0; }
+      
       /* carousel nav buttons */
       .navbtn > button { width: 100%; }
 
-      /*  Make Category Buttons Colored Charlotte Green */
+      /* UPDATED: Category buttons with Charlotte green */
       .stSidebar [data-baseweb="tag"] {
           background-color: #005035 !important;   /* Charlotte green */
           color: white !important;
        }
 
-    /* Remove border color entirely from select widgets (multiselect/selectbox/combobox)*/
-    section[data-testid="stSidebar"] div[data-baseweb="select"] > div,
-    .block-container div[data-baseweb="select"] > div,
-    div[data-baseweb="select"] > div,
-    div[data-baseweb="select"][data-focus="true"] > div,
-    div[data-baseweb="select"][aria-expanded="true"] > div,
-    div[data-baseweb="select"]:focus-within > div,
-    .stSelectbox > div {
+    /* Remove border color entirely from select widgets — scoped to main page */
+    .main-page section[data-testid="stSidebar"] div[data-baseweb="select"] > div,
+    .main-page .block-container div[data-baseweb="select"] > div,
+    .main-page div[data-baseweb="select"] > div,
+    .main-page div[data-baseweb="select"][data-focus="true"] > div,
+    .main-page div[data-baseweb="select"][aria-expanded="true"] > div,
+    .main-page div[data-baseweb="select"]:focus-within > div,
+    .main-page .stSelectbox > div {
         border: none !important;
         box-shadow: none !important;
     }
@@ -100,8 +120,7 @@ st.markdown(
         outline-color: transparent !important;
     }
 
-    /* Strong global override: remove any focus/border/box-shadow for elements inside the sidebar
-       This ensures Streamlit's default red focus styling is not shown for text inputs. */
+    /* Strong global override: remove any focus/border/box-shadow for elements inside the sidebar */
     section[data-testid="stSidebar"] *:focus,
     section[data-testid="stSidebar"] *:focus-visible,
     section[data-testid="stSidebar"] *:focus-within {
@@ -110,7 +129,7 @@ st.markdown(
         border: none !important;
     }
 
-    /* Owner info section on listing card */
+    /* UPDATED: Owner info section with green accents */
     .owner-section {
       display: flex;
       align-items: center;
@@ -120,59 +139,140 @@ st.markdown(
       cursor: pointer;
       transition: background-color 0.2s ease;
       margin-bottom: 12px;
-      background: rgba(255,255,255,0.05);
+      background: rgba(0, 80, 53, 0.05);  /* CHANGED: Light green background */
+      border: 1px solid rgba(0, 80, 53, 0.1);  /* ADDED: Subtle green border */
     }
+    
     .owner-section:hover {
-      background: rgba(255,255,255,0.1);
+      background: rgba(0, 80, 53, 0.1);  /* CHANGED: Darker green on hover */
     }
+    
     .owner-avatar {
       width: 40px;
       height: 40px;
       border-radius: 50%;
       object-fit: cover;
-      border: 2px solid rgba(255,255,255,0.2);
+      border: 2px solid #005035;  /* CHANGED: Green border */
     }
+    
     .owner-avatar-placeholder {
       width: 40px;
       height: 40px;
       border-radius: 50%;
-      background: #87B481;
+      background: #005035;  /* CHANGED: Charlotte green */
       display: flex;
       align-items: center;
       justify-content: center;
       color: white;
       font-weight: bold;
-      border: 2px solid rgba(255,255,255,0.2);
+      border: 2px solid #005035;
     }
+    
     .owner-info {
       display: flex;
       flex-direction: column;
       gap: 2px;
     }
+    
     .owner-name {
       font-weight: 600;
-      color: white;
+      color: #005035;  /* CHANGED: Green text */
       font-size: 0.95em;
     }
+    
     .owner-rating {
       font-size: 0.85em;
-      color: rgba(255,255,255,0.7);
+      color: #666666;  /* CHANGED: Dark gray for better contrast */
+    }
+    
+    /* NEW: Improved search bar styling */
+    .search-container {
+      text-align: center;
+      margin: 80px auto 50px auto;
+      max-width: 700px;
+      padding: 40px;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0, 80, 53, 0.1);  /* ADDED: Soft green shadow */
+    }
+    
+    .search-title {
+      color: #005035;  /* CHANGED: Green title */
+      font-size: 3em;
+      margin-bottom: 20px;
+      font-weight: bold;
     }
 
+    .title{
+        color: #005035;
+        font-size: 3em;
+        margin-bottom: 20px;
+        font-weight: bold;
+    }
+    
+    .search-subtitle {
+      color: #666666;  /* CHANGED: Dark gray subtitle */
+      font-size: 1.3em;
+      margin-bottom: 40px;
+    }
+    
+    /* NEW: Custom search input styling */
+    .custom-search-input {
+      border: 2px solid #005035 !important;
+      border-radius: 50px !important;
+      padding: 15px 25px !important;
+      font-size: 1.1em !important;
+      background: white !important;
+    }
+    
+    .custom-search-input:focus {
+      border-color: #003d28 !important;
+      box-shadow: 0 0 0 3px rgba(0, 80, 53, 0.1) !important;
+    }
+    
+    /* UPDATED: Text colors for better contrast on white background */
+    .stTitle, h1 {
+      color: #005035 !important;  /* CHANGED: Green titles */
+    }
+    
+    .stMarkdown {
+      color: #333333 !important;  /* CHANGED: Dark text for better readability */
+    }
+    
+    /* UPDATED: Sold label color */
+    .sold-label {
+      color: #d32f2f !important;  /* CHANGED: Red for sold items */
+      font-weight: bold;
+    }
+    .listings-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px; /* space between cards */
+        }
+
+    .card {
+        background: #ffffff;
+        border: 2px solid #005035;
+        border-radius: 14px;
+        padding: 18px 20px;
+        box-shadow: 0 8px 32px rgba(0, 80, 53, 0.1); /* glowing effect */
+        transition: all 0.2s ease;
+    }
+
+    .card:hover {
+        box-shadow: 0 12px 36px rgba(0, 80, 53, 0.2);
+        transform: translateY(-2px); /* subtle lift on hover */
+    }
+    
     </style>
     """,
     unsafe_allow_html=True,
 )
-
-# Title
-st.title("Campus Market")
-st.write("Welcome to Campus Market! Buy and sell items with UNCC students.")
-
 # Start session
 db = SessionLocal()
 
 # --- Sidebar search controls ---
-st.sidebar.header("Search & Filters")
+st.sidebar.header("Advanced Search")
 search_query = st.sidebar.text_input("Search by keyword", placeholder="e.g. textbook, laptop")
 
 # Use text_input with placeholder instead of number_input
@@ -195,12 +295,73 @@ max_price = max_price if max_price is not None else float("inf")
 conditions = st.sidebar.multiselect("Condition", ALLOWED_CONDITIONS)
 categories = st.sidebar.multiselect("Category", ALLOWED_CATEGORIES)
 
+# Use get() method to safely access session state
+search_initiated = st.session_state.get('search_initiated', False)
 
-# --- Fetch filtered listings or all listings ---
-if search_query or min_price or max_price or conditions:
+# Main search bar in center of page
+if not search_initiated:
+    st.markdown(
+        """
+        <div class="search-container">
+          <div class="search-title">Campus Market</div>
+          <div class="search-subtitle">What are you looking for today?</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    # Center the search bar
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        main_search_query = st.text_input(
+            "Search for items...",
+            placeholder="Type what you're looking for and press Enter...",
+            label_visibility="collapsed",
+            key="main_search_input"
+        )
+        
+        search_button = st.button("Search Campus Market", use_container_width=True, key="main_search_button")
+        
+        if main_search_query.strip() or search_button:
+            st.session_state.search_initiated = True
+            st.session_state.main_search_query = main_search_query
+            st.rerun()
+else:
+    # Display the main title when search is initiated
+    st.title("Campus Market")
+    # Add clear search button
+    col1, col2 = st.columns([3, 1])
+    with col2:
+        if st.button("Clear Search", type="secondary"):
+            st.session_state.search_initiated = False
+            st.session_state.main_search_query = ''
+            st.rerun()
+    
+    main_search_query = st.session_state.get('main_search_query', '')
+    if main_search_query:
+        st.write(f"Showing results for: **{main_search_query}**")
+    else:
+        st.write("Browse all listings below:")
+
+# --- Combine both search methods ---
+# Determine which search query to use (main search takes priority)
+main_search_query = st.session_state.get('main_search_query', '')
+active_search_query = main_search_query if main_search_query else search_query
+
+# --- Fetch filtered listings ---
+# Use search_listings if ANY search criteria are present
+has_search_criteria = (
+    active_search_query or 
+    min_price > 0 or 
+    max_price != float('inf') or 
+    conditions or 
+    categories
+)
+
+if has_search_criteria:
     listings = search_listings(
         db,
-        keyword=search_query if search_query else None,
+        keyword=active_search_query if active_search_query else None,
         min_price=min_price if min_price > 0 else None,
         max_price=max_price if max_price > 0 else None,
         conditions=conditions if conditions else None,
@@ -223,14 +384,54 @@ if not listings:
 else:
     # ---------- Listing Renderer ---------- #
     def render_listing(l):
+        from app.db import SessionLocal #added for favs
+        db = SessionLocal() #added for favs
         is_sold = getattr(l, "is_sold", False)
         label = " 🟡 SOLD" if is_sold else ""
         title_text = f"~~{l.title}~~" if is_sold else l.title
-
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-
+        st.markdown("---")
         # --- Owner section (clickable to view public profile) ---
         owner = db.query(User).filter(User.id == l.user_id).first()
+
+        # --- Favorite button ---
+        if "user_id" in st.session_state:
+            current_user_id = st.session_state["user_id"]
+
+            # Only show favorite button if the user is NOT the owner
+            if l.user_id != current_user_id:
+                favorited = is_favorited(db, current_user_id, l.id)
+
+                # Set heart label: white if not favorited, red if favorited
+                heart_label = "❤️" if favorited else "🤍"
+
+                if st.button(heart_label, key=f"fav_{l.id}", use_container_width=True):
+                    if favorited:
+                        remove_favorite(db, current_user_id, l.id)
+                    else:
+                        add_favorite(db, current_user_id, l.id)
+                    st.rerun()
+
+        # Only show favorite button if user is logged in
+        #if "user_id" in st.session_state and st.session_state["user_id"] is not None:
+
+            #current_user_id = st.session_state["user_id"]
+            #if l.user_id != current_user_id:  # <-- Skip own listings
+                #favorited = is_favorited(db, st.session_state["user_id"], l.id)
+
+                #if favorited:
+                    #if st.button("🤍", key=f"fav_{l.id}"):
+                        #remove_favorite(db, st.session_state["user_id"], l.id)
+                        #st.rerun()
+                #else:
+                    #if st.button("❤️", key=f"fav_{l.id}"):
+                        #add_favorite(db, st.session_state["user_id"], l.id)
+                        #st.rerun()
+
+        else:
+            st.caption("Log in to save this listing")
+
+        db.close()
+
 
         # Always render owner container; use fallbacks when user or profile picture missing
         owner_exists = bool(owner)
@@ -466,8 +667,28 @@ else:
 
         st.markdown('</div>', unsafe_allow_html=True)  # end card
 
+        # FAVORITE BUTTON (heart)
+        #if "user_id" in st.session_state and st.session_state["user_id"] is not None:
+
+            #db = SessionLocal()
+            #favorited = is_favorited(db, st.session_state["user_id"], l.id)
+
+            #heart = "❤️" if favorited else "🤍"
+            #unique_key = f"fav_{l.id}_{hash(str(l.title))}"
+
+            #if st.button(heart, key=unique_key):
+                #if favorited:
+                    #remove_favorite(db, st.session_state["user_id"], l.id)
+                #else:
+                    #add_favorite(db, st.session_state["user_id"], l.id)
+
+                #db.close()
+               # st.rerun()
+
+            #db.close()
+
     # Render all listings
     for item in listings:
-        render_listing(item)
+            render_listing(item)
 
 db.close()
