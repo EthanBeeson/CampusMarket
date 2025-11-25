@@ -21,7 +21,7 @@ st.markdown(
     """
     <style>
         /* Global background */
-        .stApp { background-color: #ffffff !important; }
+        .stApp { background-color: #fffdf2 !important; }
         .block-container { max-width: 900px; margin: 0 auto; }
 
         /* Headings and main content text */
@@ -258,7 +258,7 @@ try:
     current_user_id = st.session_state.get("user_id")
 
     # --- Listings Section ---
-    st.header("📋 Listings by this User")
+    st.header("Listings by this User")
     
     user_listings = db.query(Listing).filter(Listing.user_id == user.id).all()
     
@@ -323,7 +323,7 @@ try:
 
             # Report flow for public listings
             if listing.user_id != current_user_id:
-                if st.button("🚩 Report Listing", key=f"pub_report_{listing.id}", use_container_width=True):
+                if st.button("Report Listing", key=f"pub_report_{listing.id}", use_container_width=True):
                     st.session_state[f"pub_report_open_{listing.id}"] = True
 
                 if st.session_state.get(f"pub_report_open_{listing.id}", False):

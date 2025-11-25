@@ -10,7 +10,7 @@ st.markdown(
     """
     <style>
         /* Global background */
-        .stApp { background-color: #ffffff !important; }
+        .stApp { background-color: #fffdf2 !important; }
         .block-container { max-width: 900px; margin: 0 auto; }
 
         /* 1) Main content text (title, body, caption) */

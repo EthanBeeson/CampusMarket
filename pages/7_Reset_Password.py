@@ -10,7 +10,7 @@ st.markdown(
     """
     <style>
         /* Global background */
-        .stApp { background-color: #ffffff !important; }
+        .stApp { background-color: #fffdf2 !important; }
         .block-container { max-width: 900px; margin: 0 auto; }
 
         /* Headings and main content text */
@@ -88,7 +88,37 @@ st.markdown(
             background-color: #003d28 !important;
             border-color: #003d28 !important;
         }
+        /* ADD THIS: Ensure form submit button text stays white on hover */
+        .stFormSubmitButton > button:hover,
+        .stFormSubmitButton > button:hover * {
+            color: #ffffff !important;
+        }
+            /* ADD THIS: Specific fix for form submit button text */
+.stFormSubmitButton > button {
+    color: white !important;
+}
 
+.stFormSubmitButton > button div,
+.stFormSubmitButton > button p,
+.stFormSubmitButton > button span {
+    color: white !important;
+    -webkit-text-fill-color: white !important;
+}
+
+.stFormSubmitButton > button:hover,
+.stFormSubmitButton > button:hover div,
+.stFormSubmitButton > button:hover p,
+.stFormSubmitButton > button:hover span {
+    color: white !important;
+    -webkit-text-fill-color: white !important;
+}
+
+/* Target the specific button content */
+.stFormSubmitButton button [data-testid="stMarkdownContainer"],
+.stFormSubmitButton button [data-testid="stMarkdownContainer"] * {
+    color: white !important;
+    -webkit-text-fill-color: white !important;
+}
         /* Notifications/messages */
         div[data-testid="stNotification"] {
             border-radius: 8px !important;

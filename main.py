@@ -36,7 +36,7 @@ st.markdown(
     """
     <style>
       /* CHANGED: White background instead of green */
-      .stApp { background-color: #ffffff; }
+      .stApp { background-color: #fffdf2; }
       
       /* center column width */
       .block-container { max-width: 900px; margin: 0 auto; }
@@ -70,7 +70,7 @@ st.markdown(
         background-color: #003d28;   /* CHANGED: Darker green on hover */
         border-color: #003d28;
       }
-      
+
       /* Focused / active multiselect/select wrappers */
       [data-testid="stSidebar"] .stMultiSelect div[data-baseweb="select"][data-focus="true"] > div,
       .block-container .stMultiSelect div[data-baseweb="select"][data-focus="true"] > div,

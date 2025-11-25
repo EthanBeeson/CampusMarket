@@ -16,12 +16,136 @@ st.set_page_config(page_title="Messages", page_icon="💬", layout="wide")
 st.markdown(
     """
     <style>
-        body, .stApp {
-            background-color: #005035 !important;  /* UNCC green background */
+        /* Global background */
+        .stApp { background-color: #fffdf2 !important; }
+        .block-container { max-width: 900px; margin: 0 auto; }
+
+        /* 1) Main content text (title, body, caption) */
+        div[data-testid="stAppViewContainer"] h1,
+        div[data-testid="stAppViewContainer"] h2,
+        div[data-testid="stAppViewContainer"] h3,
+        div[data-testid="stAppViewContainer"] h4,
+        div[data-testid="stAppViewContainer"] h5,
+        div[data-testid="stAppViewContainer"] h6 {
+            color: #005035 !important;   /* Charlotte green headings */
         }
+
+        div[data-testid="stAppViewContainer"] .stMarkdown,
+        div[data-testid="stAppViewContainer"] p,
+        div[data-testid="stAppViewContainer"] span,
+        div[data-testid="stAppViewContainer"] label,
+        div[data-testid="stAppViewContainer"] div:not([data-testid="stSidebar"]) {
+            color: #333333 !important;    /* readable grey body text */
+        }
+
+        /* Caption text from st.caption */
+        div[data-testid="stAppViewContainer"] .stCaption,
+        div[data-testid="stAppViewContainer"] .stMarkdown small,
+        div[data-testid="stAppViewContainer"] .stMarkdown .caption {
+            color: #666666 !important;    /* softer grey for captions */
+        }
+
+        /* 2) Sidebar: keep text white */
+        section[data-testid="stSidebar"] p,
+        section[data-testid="stSidebar"] span,
+        section[data-testid="stSidebar"] div,
+        section[data-testid="stSidebar"] .stMarkdown {
+            color: #ffffff !important;
+        }
+        /* ADD THIS: Sidebar headers - make them white */
+        section[data-testid="stSidebar"] h1,
+        section[data-testid="stSidebar"] h2,
+        section[data-testid="stSidebar"] h3,
+        section[data-testid="stSidebar"] h4,
+        section[data-testid="stSidebar"] h5,
+        section[data-testid="stSidebar"] h6 {
+            color: #ffffff !important;
+        }
+
+        /* 3) Inputs (text + password) */
+        .stTextInput > div > div > input {
+            background-color: #ffffff !important;
+            color: #000000 !important;               /* black typed text */
+            border: 2px solid #005035 !important;
+            border-radius: 10px !important;
+            padding: 12px 15px !important;
+        }
+        .stTextInput > div > div > input::placeholder { color: #666666 !important; }
+        .stTextInput > div > div > input:focus {
+            border-color: #003d28 !important;
+            box-shadow: 0 0 0 3px rgba(0, 80, 53, 0.1) !important;
+        }
+        .stTextInput input[type="password"] {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border: 2px solid #005035 !important;
+            border-radius: 10px !important;
+            padding: 12px 15px !important;
+        }
+
+        /* 4) Buttons: keep text white */
+        div.stButton > button,
+        .stFormSubmitButton > button {
+            background-color: #005035 !important;
+            color: #ffffff !important;               /* button text white */
+            border: 2px solid #005035 !important;
+            border-radius: 10px !important;
+            padding: 10px 14px !important;
+            font-weight: 600 !important;
+            width: 100% !important;
+            margin-top: 15px !important;
+        }
+
+        /* Ensure all inner text nodes inside BOTH buttons stay white */
+        div.stButton > button *,
+        .stFormSubmitButton > button * {
+            color: #ffffff !important;               /* override grey span inside buttons */
+        }
+
+        /* Hover effect */
+        div.stButton > button:hover,
+        .stFormSubmitButton > button:hover {
+            background-color: #003d28 !important;
+            border-color: #003d28 !important;
+        }
+
+        /* 5) Notifications/messages — readable text */
+        div[data-testid="stNotification"] {
+            border-radius: 8px !important;
+            padding: 0.5rem 1rem !important;
+            background-color: #ffffff !important;
+        }
+        div[data-testid="stNotification"] p,
+        div[data-testid="stNotification"] span,
+        div[data-testid="stNotification"] div {
+            color: #000000 !important;               /* message text black */
+            font-weight: 600 !important;
+        }
+        /* Error (role=alert) background + border */
+        div[role="alert"] {
+            background-color: rgba(211, 47, 47, 0.12) !important;
+            border: 1px solid #d32f2f !important;
+            border-radius: 8px !important;
+        }
+        /* Success/info (non-alert) background + border */
+        div[data-testid="stNotification"]:not([role="alert"]) {
+            background-color: rgba(0, 80, 53, 0.12) !important;
+            border: 1px solid #005035 !important;
+            border-radius: 8px !important;
+        }
+
+        /* 6) Horizontal rule */
+        hr { border-color: #cccccc !important; }
+        
+        /* Final fix: Log in button text stays white */
+        div[data-testid="stAppViewContainer"] .stFormSubmitButton > button,
+        div[data-testid="stAppViewContainer"] .stFormSubmitButton > button * {
+            color: #ffffff !important;
+        }
+
     </style>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
 
 # Require login
@@ -78,18 +202,10 @@ if forced_other_id and forced_listing_id:
             bubble_color = "#DCF8C6" if is_me else "#FFFFFF"
             st.markdown(
                 f"""
-                <div style="display:flex; justify-content:{align}; margin:5px 0;">
-                    <div style="
-                        background-color:{bubble_color};
-                        padding:10px 15px;
-                        max-width:60%;
-                        border-radius:12px;
-                        box-shadow:0 1px 2px rgba(0,0,0,0.1);
-                        color: black !important;
-                        -webkit-text-fill-color: black;
-                    ">
+                <div class="chat-row">
+                    <div class="chat-bubble {'me' if is_me else 'other'}">
                         {msg.content}
-                        <div style="font-size:11px; color:gray; text-align:right;">
+                        <div class="chat-timestamp">
                             {msg.created_at.strftime("%Y-%m-%d %H:%M")}
                         </div>
                     </div>
