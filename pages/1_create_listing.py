@@ -4,6 +4,7 @@
 import streamlit as st
 import os
 import uuid
+from app.storage import get_upload_subdir
 
 # SQLAlchemy DB Session 
 from app.db import SessionLocal
@@ -12,8 +13,7 @@ from app.crud.listings import create_listing, ALLOWED_CONDITIONS, ALLOWED_CATEGO
 from app.nav import render_nav_sidebar
 
 # Make sure we have a place to store uploads
-UPLOAD_DIR = "uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+UPLOAD_DIR = get_upload_subdir("listing_images")
 
 # Custom navigation sidebar
 render_nav_sidebar()

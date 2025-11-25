@@ -8,6 +8,7 @@ import base64
 import json
 import uuid
 from datetime import datetime
+from app.storage import get_upload_subdir, build_upload_path
 
 # SQLAlchemy imports
 from app.db import SessionLocal
@@ -232,13 +233,12 @@ def get_received_messages(db, user_id):
 
 def save_profile_picture(uploaded_file, user_id):
     """Save profile picture to uploads directory"""
-    upload_dir = "uploads/profile_pictures"
-    os.makedirs(upload_dir, exist_ok=True)
+    upload_dir = get_upload_subdir("profile_pictures")
     
     # Create filename with user_id
     file_extension = os.path.splitext(uploaded_file.name)[1]
     filename = f"profile_{user_id}{file_extension}"
-    file_path = os.path.join(upload_dir, filename)
+    file_path = build_upload_path("profile_pictures", filename)
     
     # Save the file
     with open(file_path, "wb") as f:
@@ -248,7 +248,7 @@ def save_profile_picture(uploaded_file, user_id):
 
 def load_profile_picture(user_id):
     """Load profile picture if exists"""
-    upload_dir = "uploads/profile_pictures"
+    upload_dir = get_upload_subdir("profile_pictures")
     possible_extensions = ['.jpg', '.jpeg', '.png', '.gif']
     
     for ext in possible_extensions:
@@ -553,7 +553,7 @@ with col_pic:
                             db.close()
 
                         # cleanup old files
-                        upload_dir = "uploads/profile_pictures"
+                        upload_dir = get_upload_subdir("profile_pictures")
                         for file in os.listdir(upload_dir):
                             if file.startswith(f"profile_{user_id}") and file != os.path.basename(new_profile_path):
                                 try:

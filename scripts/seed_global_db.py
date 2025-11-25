@@ -15,6 +15,7 @@ from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from PIL import Image as PILImage, ImageDraw
+from app.storage import get_upload_subdir
 
 # Ensure app package is importable
 ROOT = Path(__file__).resolve().parent.parent
@@ -30,7 +31,7 @@ from app.crud.users import hash_password
 
 DB_PATH = os.getenv("GLOBAL_DB_PATH", "campus_market_global.db")
 DB_URL = f"sqlite:///{DB_PATH}"
-DEMO_IMAGE_DIR = Path("uploads/demo")
+DEMO_IMAGE_DIR = Path(get_upload_subdir("demo"))
 DEMO_IMAGE_DIR.mkdir(parents=True, exist_ok=True)
 
 
