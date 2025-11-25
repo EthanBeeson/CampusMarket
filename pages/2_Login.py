@@ -2,9 +2,13 @@
 import streamlit as st
 from app.db import SessionLocal
 from app.crud.users import authenticate_user, validate_charlotte_email
+from app.nav import render_nav_sidebar
 
 # ---------------- Streamlit UI ----------------
 st.set_page_config(page_title="Login - Campus Market", layout="centered")
+
+# Custom nav sidebar
+render_nav_sidebar()
 
 st.markdown(
     """

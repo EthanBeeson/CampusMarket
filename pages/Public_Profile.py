@@ -11,11 +11,15 @@ from app.crud.reviews import (
     get_reviews_for_user, get_user_average_rating, create_review,
     has_user_reviewed, update_review, delete_review
 )
+from app.nav import render_nav_sidebar
 from sqlalchemy import select
 import json
 from datetime import datetime
 
 st.set_page_config(page_title="Public Profile - Campus Market", layout="wide")
+
+# Custom nav sidebar (public page not listed in nav items)
+render_nav_sidebar()
 
 st.markdown(
     """

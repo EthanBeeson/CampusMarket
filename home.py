@@ -3,6 +3,7 @@ from PIL import Image
 import os
 import base64
 from app.db import Base, engine, SessionLocal
+from app.nav import render_nav_sidebar
 from app.models.listing import Listing
 from app.models.image import Image as ImageModel
 from app.crud.listings import (
@@ -17,6 +18,9 @@ from app.crud.favorites import is_favorited, add_favorite, remove_favorite
 
 
 st.set_page_config(page_title="Campus Market", layout="wide")
+
+# Custom navigation sidebar (replaces default multipage nav)
+render_nav_sidebar()
 
 
 # Create database tables

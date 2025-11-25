@@ -9,9 +9,13 @@ from app.db import SessionLocal
 from app.crud.messages import send_message, get_user_messages
 from app.models.user import User
 from app.models.listing import Listing
+from app.nav import render_nav_sidebar
 
 
 st.set_page_config(page_title="Messages", page_icon="💬", layout="wide")
+
+# Custom nav sidebar
+render_nav_sidebar()
 
 st.markdown(
     """
@@ -287,13 +291,13 @@ if forced_other_id and forced_listing_id:
                 del st.session_state["open_chat_for_listing"]
 
                 # Redirect back to main page after sending
-                st.switch_page("main.py")
+                st.switch_page("home.py")
 
                 # Redirect back to Main page if coming from Main
                 #if RETURN_TO_MAIN:
                     #del st.session_state["return_to_main_after_send"]
                     #st.success("Message sent! Returning to Home Page...")
-                    #st.switch_page("main")  # <-- redirects back
+                    #st.switch_page("home.py")  # <-- redirects back
                 #else:
                     #st.rerun()
 

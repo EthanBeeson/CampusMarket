@@ -24,6 +24,7 @@ from app.crud.users import (
 from app.models.message import Message
 from app.crud.favorites import is_favorited, add_favorite, remove_favorite, get_user_favorites
 from app.models.favorite import Favorite
+from app.nav import render_nav_sidebar
 
 st.divider()
 
@@ -484,6 +485,9 @@ def display_listing_card(listing, images, current_user_id):
 # Main Profile Page
 st.set_page_config(page_title="Profile - Campus Market", layout="wide")
 
+# Custom nav sidebar
+render_nav_sidebar()
+
 # Check if user is logged in
 if "user_id" not in st.session_state or "user_email" not in st.session_state:
     st.error("Please log in to view your profile.")
@@ -760,7 +764,7 @@ with col1:
 
 with col2:
     if st.button("Browse Listings", use_container_width=True):
-        st.switch_page("main.py")
+        st.switch_page("home.py")
 
 with col3:
     # Enhanced Logout button with confirmation

@@ -24,3 +24,4 @@
 {"listing_id": 3, "reporter_id": 3, "reason": "wrong picture", "timestamp": "2025-11-25T02:16:24.321377Z", "resolved_by": "admintest5@charlotte.edu", "resolved_at": "2025-11-25T02:21:06.575487Z", "resolution": "deleted_listing"}
 {"listing_id": 3, "reporter_id": 3, "reason": "Wrong picture", "timestamp": "2025-11-24T20:28:05.265354Z", "resolved_by": "admintest5@charlotte.edu", "resolved_at": "2025-11-25T02:21:17.611274Z"}
 {"listing_id": 2, "reporter_id": 3, "reason": "Potential Scam", "timestamp": "2025-11-24T20:27:55.266404Z", "resolved_by": "admintest5@charlotte.edu", "resolved_at": "2025-11-25T02:21:22.460147Z", "resolution": "deleted_listing"}
+{"listing_id": 1, "reporter_id": 4, "reason": "yuck", "timestamp": "2025-11-25T20:49:59.159375Z", "resolved_by": "admintest5@charlotte.edu", "resolved_at": "2025-11-25T20:50:33.736800Z", "resolution": "deleted_listing"}

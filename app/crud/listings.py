@@ -11,7 +11,7 @@ ALLOWED_CATEGORIES = ["Books", "Electronics", "Furniture", "Clothing", "Hobby", 
 
 
 #====== CRUD Operations for Listings ======#
-# These CRUD functions are to be use in main.py and future API endpoints
+# These CRUD functions are used in home.py and future API endpoints
 # for creating, reading, and deleting listings along with their images.
 #=========================================#
 

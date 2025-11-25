@@ -9,10 +9,14 @@ import uuid
 from app.db import SessionLocal
 # CRUD Function that writes a new listing to the database 
 from app.crud.listings import create_listing, ALLOWED_CONDITIONS, ALLOWED_CATEGORIES
+from app.nav import render_nav_sidebar
 
 # Make sure we have a place to store uploads
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# Custom navigation sidebar
+render_nav_sidebar()
 
 # ======= CONSISTENT STYLING WITH MAIN PAGE ======= #
 st.markdown(

@@ -2,8 +2,12 @@
 import streamlit as st
 from app.db import SessionLocal
 from app.crud.users import reset_password_by_email, validate_charlotte_email, validate_password
+from app.nav import render_nav_sidebar
 
 st.set_page_config(page_title="Reset Password - Campus Market", layout="centered")
+
+# Custom nav sidebar
+render_nav_sidebar()
 
 # Charlotte colors
 st.markdown(

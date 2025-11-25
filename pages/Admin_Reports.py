@@ -6,8 +6,12 @@ from datetime import datetime
 from app.db import SessionLocal
 from app.models.listing import Listing
 from app.models.image import Image
+from app.nav import render_nav_sidebar
 
 st.set_page_config(page_title="Admin Reports - Campus Market", layout="wide")
+
+# Custom nav sidebar
+render_nav_sidebar()
 
 # Simple admin check based on config/admins.json
 ADMINS_PATH = os.path.join("config", "admins.json")

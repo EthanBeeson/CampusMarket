@@ -32,21 +32,21 @@ source venv/bin/activate
 # Install Dependencies - once 
 pip install -r requirements.txt
 
-# Initialize the database by running main.py
-python main.py
+# Initialize the database by running home.py
+python home.py
 
 # First time only:
 # From the root of the sproject CampusMarket create a fake listing by running:
 python -m scripts.seed_db
 
 # For testing streamlit frontend
-streamlit run main.py
+streamlit run home.py
 # Navigate to local URL given after the above command ie. http://localhost:8501
 
 ## Notes
 
 - Do **not** commit your local virtual environment (`venv/`) or SQLite database (`campus_market.db`) to Git.
-- To reset the database, simply delete `campus_market.db` and rerun: main.py
+- To reset the database, simply delete `campus_market.db` and rerun: home.py
 -All CRUD functionality for listings is in app/crud/listings.py. Images are automatically linked via foreign keys.
 -When adding new Python packages, run pip freeze > requirements.txt to update dependencies.
 
@@ -59,7 +59,7 @@ Start Session:
 
 3. pip install -r requirements.txt
 
-4. streamlit run app/main.py
+4. streamlit run home.py
 
 Done with session:
 5. git add .
