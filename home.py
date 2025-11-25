@@ -277,7 +277,19 @@ db = SessionLocal()
 
 # --- Sidebar search controls ---
 st.sidebar.header("Advanced Search")
-search_query = st.sidebar.text_input("Search by keyword", placeholder="e.g. textbook, laptop")
+search_query = st.sidebar.text_input(
+    "Search by keyword",
+    placeholder="e.g. textbook, laptop",
+    key="sidebar_search_input",
+)
+
+# If the sidebar query changes, clear the main search box/state to avoid conflicts
+prev_sidebar_query = st.session_state.get("_prev_sidebar_query")
+if prev_sidebar_query != search_query:
+    st.session_state["_prev_sidebar_query"] = search_query
+    st.session_state["main_search_query"] = ""
+    st.session_state["main_search_input"] = ""
+    st.session_state["search_initiated"] = False
 
 # Use text_input with placeholder instead of number_input
 min_price_str = st.sidebar.text_input("Min Price", placeholder="-")

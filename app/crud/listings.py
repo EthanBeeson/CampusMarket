@@ -200,20 +200,17 @@ def search_listings(db, keyword: str = None, threshold: int = 60,
     if categories:
         if isinstance(categories, (list, tuple, set)) and len(categories) > 0:
             q = q.filter(Listing.category.in_(list(categories)))
-    listings = q.all()
-
-    # --- Apply fuzzy keyword search if keyword is provided ---
+    # --- Keyword filter (case-insensitive substring in title or description) ---
     if keyword and keyword.strip():
-        keyword_norm = keyword.lower().strip()
-        results = []
-        for listing in listings:
-            title_norm = listing.title.lower().strip()
-            desc_norm = listing.description.lower().strip()
-            title_score = fuzz.token_sort_ratio(keyword_norm, title_norm)
-            desc_score = fuzz.token_sort_ratio(keyword_norm, desc_norm)
-            if max(title_score, desc_score) >= threshold:
-                results.append(listing)
-        return results
+        kw = f"%{keyword.strip()}%"
+        q = q.filter(
+            or_(
+                Listing.title.ilike(kw),
+                Listing.description.ilike(kw)
+            )
+        )
+
+    listings = q.all()
 
     # --- If no keyword provided, just return filtered results ---
     return listings

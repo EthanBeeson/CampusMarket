@@ -45,8 +45,9 @@ streamlit run home.py
 
 ## Notes
 
-- Do **not** commit your local virtual environment (`venv/`) or SQLite database (`campus_market.db`) to Git.
-- To reset the database, simply delete `campus_market.db` and rerun: home.py
+- The app now defaults to a shared demo database `campus_market_global.db` (checked in) populated with mock users/listings. Override with `DATABASE_URL` if you need a local DB.
+- Do **not** commit your local virtual environment (`venv/`) or any private SQLite database you create.
+- To reset the shared demo DB, delete `campus_market_global.db` and rerun: `python scripts/seed_global_db.py` (or run `home.py` to auto-create empty tables with the default file).
 -All CRUD functionality for listings is in app/crud/listings.py. Images are automatically linked via foreign keys.
 -When adding new Python packages, run pip freeze > requirements.txt to update dependencies.
 
