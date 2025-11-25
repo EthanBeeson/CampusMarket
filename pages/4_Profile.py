@@ -6,6 +6,7 @@ from PIL import Image as PILImage
 import io
 import base64
 import json
+import uuid
 from datetime import datetime
 
 # SQLAlchemy imports
@@ -177,16 +178,41 @@ def save_report(listing_id, reporter_id, reason: str = ""):
     `reports/reports.jsonl` where each line is a JSON object.
     """
     os.makedirs("reports", exist_ok=True)
+    # Build report with unique id
     report = {
+        "id": str(uuid.uuid4()),
         "listing_id": int(listing_id),
         "reporter_id": int(reporter_id) if reporter_id is not None else None,
-        "reason": reason or "",
+        "reason": (reason or "").strip(),
         "timestamp": datetime.utcnow().isoformat() + "Z",
     }
     out_path = os.path.join("reports", "reports.jsonl")
+
+    # Prevent duplicate reports by the same reporter on the same listing (simple check)
+    try:
+        if os.path.exists(out_path):
+            with open(out_path, "r", encoding="utf-8") as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        existing = json.loads(line)
+                        if (
+                            existing.get("listing_id") == int(listing_id)
+                            and existing.get("reporter_id") == (int(reporter_id) if reporter_id is not None else None)
+                        ):
+                            # Duplicate found — return existing report path and id
+                            return {"status": "duplicate", "existing": existing}
+                    except Exception:
+                        continue
+    except Exception:
+        # if reading fails, continue to write to preserve user report
+        pass
+
     with open(out_path, "a", encoding="utf-8") as fh:
         fh.write(json.dumps(report, ensure_ascii=False) + "\n")
-    return out_path
+    return {"status": "ok", "report": report, "path": out_path}
 
 def display_listing_card(listing, images, current_user_id):
     """Display a listing card with image carousel, date/time, and delete button"""
@@ -265,10 +291,23 @@ def display_listing_card(listing, images, current_user_id):
             with c1:
                 if st.button("Submit Report", key=f"report_submit_{listing.id}"):
                     try:
-                        save_report(listing.id, current_user_id, reason)
-                        st.success("Thanks — the listing has been reported.")
-                        # close the form
-                        st.session_state.pop(f"report_open_{listing.id}", None)
+                        result = save_report(listing.id, current_user_id, reason)
+                        if isinstance(result, dict) and result.get("status") == "duplicate":
+                            existing = result.get("existing")
+                            st.warning("You have already reported this listing.")
+                            if existing:
+                                st.info(f"Report ID: {existing.get('id')} — submitted {existing.get('timestamp')}")
+                        elif isinstance(result, dict) and result.get("status") == "ok":
+                            rep = result.get("report")
+                            st.success("Thanks — the listing has been reported.")
+                            st.write(f"Report ID: `{rep.get('id')}`")
+                            st.caption("An admin will review this report. You can keep this Report ID for reference.")
+                            # close the form
+                            st.session_state.pop(f"report_open_{listing.id}", None)
+                        else:
+                            # Fallback when save_report returned path string (older callers)
+                            st.success("Thanks — the listing has been reported.")
+                            st.session_state.pop(f"report_open_{listing.id}", None)
                     except Exception as e:
                         st.error(f"Error saving report: {e}")
             with c2:

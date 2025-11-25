@@ -2,6 +2,9 @@ import streamlit as st
 import os
 import json
 from datetime import datetime
+from app.db import SessionLocal
+from app.models.listing import Listing
+from app.models.image import Image
 
 st.set_page_config(page_title="Admin Reports - Campus Market", layout="wide")
 
@@ -91,6 +94,71 @@ else:
                     write_reports(reports)
                     st.warning("Report ignored and moved from open reports")
                     st.experimental_rerun()
+
+                # Admin delete listing flow (with confirmation)
+                if st.button("Delete Listing (remove)", key=f"delete_listing_{idx}"):
+                    # show a confirmation prompt on next render
+                    st.session_state[f"confirm_delete_{rep.get('id')}"] = True
+
+                if st.session_state.get(f"confirm_delete_{rep.get('id')}", False):
+                    st.warning("Are you sure? This will permanently delete the listing and its images.")
+                    c_yes, c_no = st.columns([1, 1])
+                    if c_yes.button("Yes, delete listing", key=f"confirm_yes_{idx}"):
+                        # perform deletion using DB session and also remove files
+                        db = SessionLocal()
+                        try:
+                            listing_id = rep.get("listing_id")
+                            listing = db.query(Listing).filter(Listing.id == listing_id).first()
+                            if not listing:
+                                st.error("Listing not found in database.")
+                            else:
+                                # remove image files from disk
+                                try:
+                                    for img in list(listing.images):
+                                        try:
+                                            if img.url and os.path.exists(img.url):
+                                                os.remove(img.url)
+                                        except Exception:
+                                            pass
+                                except Exception:
+                                    pass
+
+                                # delete listing record
+                                try:
+                                    db.delete(listing)
+                                    db.commit()
+                                except Exception as e:
+                                    db.rollback()
+                                    st.error(f"Failed to delete listing: {e}")
+                                    db.close()
+                                    raise
+
+                                # move report to resolved with resolution info
+                                resolver = current_email
+                                rep_res = rep.copy()
+                                rep_res["resolved_by"] = resolver
+                                rep_res["resolved_at"] = datetime.utcnow().isoformat() + "Z"
+                                rep_res["resolution"] = "deleted_listing"
+                                os.makedirs(os.path.dirname(RESOLVED_PATH), exist_ok=True)
+                                with open(RESOLVED_PATH, "a", encoding="utf-8") as fh:
+                                    fh.write(json.dumps(rep_res, ensure_ascii=False) + "\n")
+
+                                # remove from open reports and rewrite
+                                reports.pop(idx)
+                                write_reports(reports)
+                                st.success("Listing deleted and report moved to resolved_reports.jsonl")
+                                # cleanup session state and rerun
+                                st.session_state.pop(f"confirm_delete_{rep.get('id')}", None)
+                                db.close()
+                                st.rerun()
+                        finally:
+                            try:
+                                db.close()
+                            except Exception:
+                                pass
+                    if c_no.button("Cancel", key=f"confirm_no_{idx}"):
+                        st.session_state.pop(f"confirm_delete_{rep.get('id')}", None)
+                        st.info("Deletion cancelled.")
 
 # Provide download links
 st.markdown("---")
