@@ -1,61 +1,69 @@
 import pytest
-from unittest.mock import MagicMock
-import main
 
-# --- Mock listing object ---
-class MockListing:
-    def __init__(self, id, user_id):
-        self.id = id
-        self.user_id = user_id
+from app.db import SessionLocal
+from app.models.user import User
+from app.models.listing import Listing
+from app.models.favorite import Favorite
+from app.crud.favorites import is_favorited, add_favorite, remove_favorite
 
-# --- Minimal render_listing function for testing favorites ---
-def render_listing_for_test(l):
-    db = main.db
-    user_id = main.st.session_state.get("user_id")
-    if user_id and l.user_id != user_id:
-        favorited = main.is_favorited(db, user_id, l.id)
-        if favorited:
-            main.remove_favorite(db, user_id, l.id)
-        else:
-            main.add_favorite(db, user_id, l.id)
-    db.close()
-
-# --- Fixtures ---
-@pytest.fixture
-def mock_st(monkeypatch):
-    monkeypatch.setattr(main, "st", MagicMock())
-    main.st.session_state = {"user_id": 1}
-    return main.st
 
 @pytest.fixture
-def mock_db():
-    return main.db
+def db():
+    session = SessionLocal()
+    yield session
+    session.query(Favorite).delete()
+    session.query(Listing).delete()
+    session.query(User).delete()
+    session.commit()
+    session.close()
 
-# --- Tests ---
-def test_favorite_add_remove(mock_db, mock_st):
-    listing = MockListing(id=123, user_id=2)
 
-    # Ensure not favorited initially
-    assert not main.is_favorited(mock_db, mock_st.session_state["user_id"], listing.id)
+@pytest.fixture
+def user_and_listing(db):
+    user = User(email="favtest@charlotte.edu", hashed_password="x")
+    db.add(user)
+    db.commit()
+    db.refresh(user)
 
-    # Add favorite
-    main.add_favorite(mock_db, mock_st.session_state["user_id"], listing.id)
-    assert main.is_favorited(mock_db, mock_st.session_state["user_id"], listing.id)
+    listing = Listing(
+        title="Test Item",
+        description="desc",
+        price=10.0,
+        condition="Good",
+        category="Other",
+        user_id=user.id,
+    )
+    db.add(listing)
+    db.commit()
+    db.refresh(listing)
+    return user, listing
 
-    # Remove favorite
-    main.remove_favorite(mock_db, mock_st.session_state["user_id"], listing.id)
-    assert not main.is_favorited(mock_db, mock_st.session_state["user_id"], listing.id)
 
-def test_render_listing_favorites(mock_db, mock_st):
-    listing = MockListing(id=456, user_id=2)
+def test_favorite_add_remove(db, user_and_listing):
+    user, listing = user_and_listing
 
-    # Use our minimal test render_listing function
-    render_listing_for_test(listing)
+    assert not is_favorited(db, user.id, listing.id)
 
-    # Should now be favorited
-    assert main.is_favorited(mock_db, mock_st.session_state["user_id"], listing.id)
+    add_favorite(db, user.id, listing.id)
+    assert is_favorited(db, user.id, listing.id)
 
-    # Run again to remove favorite
-    render_listing_for_test(listing)
-    assert not main.is_favorited(mock_db, mock_st.session_state["user_id"], listing.id)
+    remove_favorite(db, user.id, listing.id)
+    assert not is_favorited(db, user.id, listing.id)
 
+
+def test_toggle_logic(db, user_and_listing):
+    user, listing = user_and_listing
+
+    # First add
+    if is_favorited(db, user.id, listing.id):
+        remove_favorite(db, user.id, listing.id)
+    else:
+        add_favorite(db, user.id, listing.id)
+    assert is_favorited(db, user.id, listing.id)
+
+    # Then remove
+    if is_favorited(db, user.id, listing.id):
+        remove_favorite(db, user.id, listing.id)
+    else:
+        add_favorite(db, user.id, listing.id)
+    assert not is_favorited(db, user.id, listing.id)

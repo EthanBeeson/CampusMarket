@@ -11,17 +11,18 @@ You can override the output path with the GLOBAL_DB_PATH env var.
 import os
 import re
 import sys
+import shutil
 from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from PIL import Image as PILImage, ImageDraw
-from app.storage import get_upload_subdir
 
 # Ensure app package is importable
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from app.storage import get_upload_subdir
 from app.db import Base
 from app.models.user import User
 from app.models.listing import Listing
@@ -33,6 +34,20 @@ DB_PATH = os.getenv("GLOBAL_DB_PATH", "campus_market_global.db")
 DB_URL = f"sqlite:///{DB_PATH}"
 DEMO_IMAGE_DIR = Path(get_upload_subdir("demo"))
 DEMO_IMAGE_DIR.mkdir(parents=True, exist_ok=True)
+MACBOOK_SRC = Path("/Users/anirudhpentakota/Desktop/Senior Design/CampusMarket/app/images/pexels-morningtrain-18105.jpg")
+TEXTBOOK_SRCS = [
+    Path("/Users/anirudhpentakota/Desktop/Senior Design/CampusMarket/app/images/textbooks.jpg"),
+    Path("/Users/anirudhpentakota/Desktop/Senior Design/CampusMarket/app/images/College-Textbooks.jpg"),
+]
+TI84_SRC = Path("/Users/anirudhpentakota/Desktop/Senior Design/CampusMarket/app/images/Calc.jpg")
+DORM_FRIDGE_SRCS = [
+    Path("/Users/anirudhpentakota/Desktop/Senior Design/CampusMarket/app/images/mini-fridge-hub-page-hero-e15cfba.jpg"),
+    Path("/Users/anirudhpentakota/Desktop/Senior Design/CampusMarket/app/images/FHMA24_Insignia-Mini-Fridge-with-Top-Freezer_Andrea-Landowski_01_STedit.jpeg"),
+]
+XBOX_SRCS = [
+    Path("/Users/anirudhpentakota/Desktop/Senior Design/CampusMarket/app/images/xbox.jpg"),
+    Path("/Users/anirudhpentakota/Desktop/Senior Design/CampusMarket/app/images/xbox 2.jpg"),
+]
 
 
 def slugify(name: str) -> str:
@@ -117,6 +132,7 @@ def seed():
                 user_email="mia.harris@charlotte.edu",
                 contact_email="mia.harris@charlotte.edu",
                 contact_phone="704-555-1122",
+                image_sources=[MACBOOK_SRC],
             ),
             dict(
                 title="TI-84 Plus CE Calculator",
@@ -127,6 +143,7 @@ def seed():
                 user_email="devon.james@charlotte.edu",
                 contact_email="devon.james@charlotte.edu",
                 contact_phone="704-555-2233",
+                image_sources=[TI84_SRC],
             ),
             dict(
                 title="Dorm Mini Fridge",
@@ -137,6 +154,7 @@ def seed():
                 user_email="lena.cho@charlotte.edu",
                 contact_email="lena.cho@charlotte.edu",
                 contact_phone="704-555-3344",
+                image_sources=DORM_FRIDGE_SRCS,
             ),
             dict(
                 title="Data Structures Textbook",
@@ -147,6 +165,7 @@ def seed():
                 user_email="mia.harris@charlotte.edu",
                 contact_email="mia.harris@charlotte.edu",
                 contact_phone="mia.harris@charlotte.edu",
+                image_sources=TEXTBOOK_SRCS,
             ),
             dict(
                 title="Xbox Series S",
@@ -157,13 +176,27 @@ def seed():
                 user_email="devon.james@charlotte.edu",
                 contact_email="devon.james@charlotte.edu",
                 contact_phone="704-555-2233",
+                image_sources=XBOX_SRCS,
             ),
         ]
 
         for data in listings:
-            filename = f"{slugify(data['title'])}.png"
-            img_path = DEMO_IMAGE_DIR / filename
-            create_placeholder_image(img_path, data["title"], data["price"])
+            target_paths = []
+            image_sources = data.get("image_sources") or []
+
+            # Copy provided sources when available
+            for idx, src in enumerate(image_sources):
+                if isinstance(src, Path) and src.exists():
+                    suffix = src.suffix if src.suffix else ".jpg"
+                    dest = DEMO_IMAGE_DIR / f"{slugify(data['title'])}_{idx}{suffix}"
+                    shutil.copyfile(src, dest)
+                    target_paths.append(dest)
+
+            # Fallback: generate a placeholder if nothing was copied
+            if not target_paths:
+                dest = DEMO_IMAGE_DIR / f"{slugify(data['title'])}.png"
+                create_placeholder_image(dest, data["title"], data["price"])
+                target_paths.append(dest)
 
             listing = Listing(
                 title=data["title"],
@@ -177,7 +210,8 @@ def seed():
             )
             db.add(listing)
             db.flush()  # get listing.id
-            db.add(Image(url=str(img_path), listing_id=listing.id))
+            for img_path in target_paths:
+                db.add(Image(url=str(img_path), listing_id=listing.id))
 
         db.commit()
         print(f"Seeded demo data into {DB_PATH}")
