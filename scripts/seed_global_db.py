@@ -77,7 +77,13 @@ def create_placeholder_image(path: Path, title: str, price: float):
 def seed():
     # fresh file each run
     if os.path.exists(DB_PATH):
-        os.remove(DB_PATH)
+        try:
+            os.remove(DB_PATH)
+        except PermissionError:
+            print(f"Cannot remove '{DB_PATH}' because it is open in another process.")
+            print("Please stop any running Streamlit app instances, database viewers, or other processes that may be using the file, then retry.")
+            print("If you want the script to continue without deleting the existing DB, set the GLOBAL_DB_PATH environment variable to a different filename and re-run.")
+            sys.exit(1)
 
     engine = create_engine(DB_URL, connect_args={"check_same_thread": False})
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
